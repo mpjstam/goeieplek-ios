@@ -66,51 +66,55 @@ struct CollectionDetailView: View {
       }
     }
     .sheet(isPresented: $showingDetails) {
-      Form {
-        Section("Place") {
-          Text(selectedPlaceName)
-            .font(.headline)
-        }
-        Section("Notes") {
-          TextEditor(text: $placeNotes)
-            .frame(height: 100)
-        }
-        Section("Category") {
-          Picker("Category", selection: $placeCategory) {
-            Text("Restaurant").tag("restaurant")
-            Text("Hotel").tag("hotel")
-            Text("Viewpoint").tag("viewpoint")
-            Text("Activity").tag("activity")
-            Text("Parking").tag("parking")
-            Text("Other").tag("other")
+      NavigationStack {
+        Form {
+          Section("Place") {
+            Text(selectedPlaceName.isEmpty ? "No place selected" : selectedPlaceName)
+              .font(.headline)
+              .foregroundStyle(selectedPlaceName.isEmpty ? .gray : .primary)
+          }
+          Section("Notes") {
+            TextEditor(text: $placeNotes)
+              .frame(height: 100)
+          }
+          Section("Category") {
+            Picker("Category", selection: $placeCategory) {
+              Text("Restaurant").tag("restaurant")
+              Text("Hotel").tag("hotel")
+              Text("Viewpoint").tag("viewpoint")
+              Text("Activity").tag("activity")
+              Text("Parking").tag("parking")
+              Text("Other").tag("other")
+            }
           }
         }
-      }
-      .navigationTitle("Place Details")
-      .navigationBarTitleDisplayMode(.inline)
-      .toolbar {
-        ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") {
-            showingDetails = false
-            resetForm()
-          }
-        }
-        ToolbarItem(placement: .confirmationAction) {
-          Button("Save") {
-            do {
-              _ = try repository.addPlace(
-                to: collection,
-                name: selectedPlaceName,
-                notes: placeNotes,
-                latitude: selectedPlaceLat,
-                longitude: selectedPlaceLng,
-                category: placeCategory
-              )
+        .navigationTitle("Place Details")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+          ToolbarItem(placement: .cancellationAction) {
+            Button("Cancel") {
               showingDetails = false
               resetForm()
-            } catch {
-              print("Error adding place: \(error)")
             }
+          }
+          ToolbarItem(placement: .confirmationAction) {
+            Button("Save") {
+              do {
+                _ = try repository.addPlace(
+                  to: collection,
+                  name: selectedPlaceName,
+                  notes: placeNotes,
+                  latitude: selectedPlaceLat,
+                  longitude: selectedPlaceLng,
+                  category: placeCategory
+                )
+                showingDetails = false
+                resetForm()
+              } catch {
+                print("Error adding place: \(error)")
+              }
+            }
+            .disabled(selectedPlaceName.isEmpty)
           }
         }
       }
