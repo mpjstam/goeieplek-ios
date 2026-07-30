@@ -25,19 +25,21 @@ struct ContentView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(.gray.opacity(0.05))
           } else {
-            List(viewModel.collections) { collection in
-              NavigationLink(destination: CollectionDetailView(collection: collection, repository: CollectionsRepository(modelContext: modelContext))) {
-                VStack(alignment: .leading, spacing: 4) {
-                  Text(collection.name)
-                    .font(.headline)
-                  if !collection.notes.isEmpty {
-                    Text(collection.notes)
-                      .font(.caption)
-                      .foregroundStyle(.gray)
+            List {
+              ForEach(viewModel.collections, id: \.id) { collection in
+                NavigationLink(destination: CollectionDetailView(collection: collection, repository: CollectionsRepository(modelContext: modelContext))) {
+                  VStack(alignment: .leading, spacing: 4) {
+                    Text(collection.name)
+                      .font(.headline)
+                    if !collection.notes.isEmpty {
+                      Text(collection.notes)
+                        .font(.caption)
+                        .foregroundStyle(.gray)
+                    }
+                    Text("\(collection.places.count) places")
+                      .font(.caption2)
+                      .foregroundStyle(.secondary)
                   }
-                  Text("\(collection.places.count) places")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
                 }
               }
             }

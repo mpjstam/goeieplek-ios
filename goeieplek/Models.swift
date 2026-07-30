@@ -3,7 +3,7 @@ import SwiftData
 import MapKit
 
 @Model
-final class Collection {
+final class Collection: Hashable {
   @Attribute(.unique) var id: String
   var name: String
   var notes: String
@@ -24,6 +24,14 @@ final class Collection {
     self.notes = notes
     self.createdAt = createdAt
     self.updatedAt = updatedAt
+  }
+
+  func hash(into hasher: inout Hasher) {
+    hasher.combine(id)
+  }
+
+  static func == (lhs: Collection, rhs: Collection) -> Bool {
+    lhs.id == rhs.id
   }
 }
 

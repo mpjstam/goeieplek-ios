@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		7F137EF8301A9A9800EA4E5A /* MapboxMaps in Frameworks */ = {isa = PBXBuildFile; productRef = 7F137EF7301A9A9800EA4E5A /* MapboxMaps */; };
+
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -27,7 +27,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7F137EF8301A9A9800EA4E5A /* MapboxMaps in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -70,7 +69,6 @@
 			);
 			name = goeieplek;
 			packageProductDependencies = (
-				7F137EF7301A9A9800EA4E5A /* MapboxMaps */,
 			);
 			productName = goeieplek;
 			productReference = 7F137EDE301A982B00EA4E5A /* goeieplek.app */;
@@ -101,8 +99,7 @@
 			mainGroup = 7F137ED5301A982B00EA4E5A;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				7F137EF6301A9A9800EA4E5A /* XCRemoteSwiftPackageReference "mapbox-maps-ios" */,
-			);
+					);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 7F137EDF301A982B00EA4E5A /* Products */;
 			projectDirPath = "";
@@ -358,23 +355,10 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		7F137EF6301A9A9800EA4E5A /* XCRemoteSwiftPackageReference "mapbox-maps-ios" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/mapbox/mapbox-maps-ios.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 11.27.0;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
+	/* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		7F137EF7301A9A9800EA4E5A /* MapboxMaps */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 7F137EF6301A9A9800EA4E5A /* XCRemoteSwiftPackageReference "mapbox-maps-ios" */;
-			productName = MapboxMaps;
-		};
-/* End XCSwiftPackageProductDependency section */
+	/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 7F137ED6301A982B00EA4E5A /* Project object */;
 }
