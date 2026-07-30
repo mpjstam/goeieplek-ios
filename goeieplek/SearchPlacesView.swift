@@ -32,7 +32,53 @@ struct SearchPlacesView: View {
         .shadow(radius: 2)
         .padding()
 
-        if searchResults.isEmpty && !searchText.isEmpty {
+        if selectedLocation != nil {
+          VStack(spacing: 12) {
+            Map(position: .constant(.region(
+              MKCoordinateRegion(
+                center: selectedLocation!,
+                span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+              )
+            ))) {
+              Marker(selectedPlace?.name ?? "Selected Place", coordinate: selectedLocation!)
+            }
+            .mapStyle(.standard)
+            .frame(height: 200)
+            .cornerRadius(8)
+            .padding()
+
+            VStack(alignment: .leading, spacing: 8) {
+              Text(selectedPlace?.name ?? "Place")
+                .font(.headline)
+              if let address = selectedPlace?.placemark.formattedAddress {
+                Text(address)
+                  .font(.caption)
+                  .foregroundStyle(.gray)
+              }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding()
+            .background(.gray.opacity(0.05))
+            .cornerRadius(8)
+            .padding()
+
+            Button(action: {
+              if let location = selectedLocation, let place = selectedPlace {
+                onPlaceSelected(place.name ?? "Place", location.latitude, location.longitude)
+              }
+            }) {
+              Text("Confirm & Add Details")
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(.blue)
+                .foregroundStyle(.white)
+                .cornerRadius(8)
+            }
+            .padding()
+
+            Spacer()
+          }
+        } else if searchResults.isEmpty && !searchText.isEmpty {
           VStack(spacing: 12) {
             Image(systemName: "magnifyingglass")
               .font(.system(size: 40))
@@ -52,14 +98,21 @@ struct SearchPlacesView: View {
               VStack(alignment: .leading, spacing: 4) {
                 Text(item.name ?? "Unknown")
                   .fontWeight(.semibold)
-                  .foregroundStyle(.primary)
+                  .foregroundStyle(selectedPlace?.name == item.name ? .blue : .primary)
                 if let address = item.placemark.formattedAddress {
                   Text(address)
                     .font(.caption)
                     .foregroundStyle(.gray)
                 }
               }
+              .frame(maxWidth: .infinity, alignment: .leading)
+              .contentShape(Rectangle())
             }
+            .listRowBackground(
+              selectedPlace?.name == item.name
+                ? Color.blue.opacity(0.1)
+                : Color.clear
+            )
           }
         } else {
           VStack(spacing: 12) {
@@ -81,14 +134,6 @@ struct SearchPlacesView: View {
           Button("Cancel") {
             // Dismiss handled by presentation binding
           }
-        }
-        ToolbarItem(placement: .confirmationAction) {
-          Button("Add") {
-            if let location = selectedLocation, let place = selectedPlace {
-              onPlaceSelected(place.name ?? "Place", location.latitude, location.longitude)
-            }
-          }
-          .disabled(selectedLocation == nil)
         }
       }
     }
