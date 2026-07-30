@@ -89,7 +89,7 @@ struct PlaceDetailView: View {
     .navigationTitle("Place")
     .navigationBarTitleDisplayMode(.inline)
     .toolbar {
-      ToolbarItem(placement: .primaryAction) {
+      ToolbarItemGroup(placement: .topBarTrailing) {
         Button(action: {
           editName = place.name
           editNotes = place.notes
@@ -97,13 +97,13 @@ struct PlaceDetailView: View {
           showingEdit = true
         }) {
           Image(systemName: "pencil")
+            .foregroundStyle(.blue)
         }
-      }
-      ToolbarItem(placement: .secondaryAction) {
-        Button(role: .destructive, action: {
+        Button(action: {
           showingDeleteConfirm = true
         }) {
           Image(systemName: "trash")
+            .foregroundStyle(.red)
         }
       }
     }
