@@ -36,7 +36,7 @@ final class Collection: Hashable {
 }
 
 @Model
-final class Place {
+final class Place: Hashable {
   @Attribute(.unique) var id: String
   var name: String
   var notes: String
@@ -70,5 +70,13 @@ final class Place {
 
   var coordinate: CLLocationCoordinate2D {
     CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+  }
+
+  func hash(into hasher: inout Hasher) {
+    hasher.combine(id)
+  }
+
+  static func == (lhs: Place, rhs: Place) -> Bool {
+    lhs.id == rhs.id
   }
 }

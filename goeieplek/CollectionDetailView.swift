@@ -11,6 +11,7 @@ struct CollectionDetailView: View {
   @State private var showingDetails = false
   @State private var placeNotes = ""
   @State private var placeCategory = "restaurant"
+  @State private var selectedPlace: Place?
 
   var body: some View {
     Group {
@@ -29,7 +30,7 @@ struct CollectionDetailView: View {
         .background(.gray.opacity(0.05))
       } else {
         List(collection.places) { place in
-          NavigationLink(destination: PlaceDetailView(place: place, repository: repository)) {
+          NavigationLink(value: place) {
             VStack(alignment: .leading, spacing: 4) {
               Text(place.name)
                 .font(.headline)
@@ -43,6 +44,9 @@ struct CollectionDetailView: View {
                 .font(.caption2)
                 .foregroundStyle(.secondary)
             }
+          }
+          .navigationDestination(for: Place.self) { place in
+            PlaceDetailView(place: place, repository: repository)
           }
         }
       }
