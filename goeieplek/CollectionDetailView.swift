@@ -11,44 +11,19 @@ struct CollectionDetailView: View {
   @State private var showingDetails = false
   @State private var placeNotes = ""
   @State private var placeCategory = "restaurant"
-  @State private var selectedPlace: Place?
+  @State private var navigationPath: [Place] = []
 
   var body: some View {
-    Group {
-      if collection.places.isEmpty {
-        VStack(spacing: 12) {
-          Image(systemName: "mappin")
-            .font(.system(size: 40))
-            .foregroundStyle(.gray)
-          Text("No places yet")
-            .font(.headline)
-          Text("Search or add your first place to this collection")
-            .font(.caption)
-            .foregroundStyle(.gray)
+    NavigationStack(path: $navigationPath) {
+      Group {
+        if collection.places.isEmpty {
+          emptyStateView
+        } else {
+          placesList
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(.gray.opacity(0.05))
-      } else {
-        List(collection.places) { place in
-          NavigationLink(value: place) {
-            VStack(alignment: .leading, spacing: 4) {
-              Text(place.name)
-                .font(.headline)
-              if !place.notes.isEmpty {
-                Text(place.notes)
-                  .font(.caption)
-                  .foregroundStyle(.gray)
-                  .lineLimit(1)
-              }
-              Text("\(place.category.capitalized)")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-            }
-          }
-          .navigationDestination(for: Place.self) { place in
-            PlaceDetailView(place: place, repository: repository)
-          }
-        }
+      }
+      .navigationDestination(for: Place.self) { place in
+        PlaceDetailView(place: place, repository: repository)
       }
     }
     .navigationTitle(collection.name)
@@ -121,6 +96,44 @@ struct CollectionDetailView: View {
             .disabled(selectedPlaceName.isEmpty)
           }
         }
+      }
+    }
+  }
+
+  private var emptyStateView: some View {
+    VStack(spacing: 12) {
+      Image(systemName: "mappin")
+        .font(.system(size: 40))
+        .foregroundStyle(.gray)
+      Text("No places yet")
+        .font(.headline)
+      Text("Search or add your first place to this collection")
+        .font(.caption)
+        .foregroundStyle(.gray)
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .background(.gray.opacity(0.05))
+  }
+
+  private var placesList: some View {
+    List(collection.places) { place in
+      Button(action: { navigationPath.append(place) }) {
+        VStack(alignment: .leading, spacing: 4) {
+          Text(place.name)
+            .font(.headline)
+            .foregroundStyle(.primary)
+          if !place.notes.isEmpty {
+            Text(place.notes)
+              .font(.caption)
+              .foregroundStyle(.gray)
+              .lineLimit(1)
+          }
+          Text(place.category.capitalized)
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
       }
     }
   }
