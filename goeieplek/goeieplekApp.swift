@@ -1,17 +1,24 @@
-//
-//  goeieplekApp.swift
-//  goeieplek
-//
-//  Created by Michiel Stam on 29/07/2026.
-//
-
 import SwiftUI
+import SwiftData
 
 @main
 struct goeieplekApp: App {
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
-        }
+  let modelContainer: ModelContainer
+
+  var body: some Scene {
+    WindowGroup {
+      ContentView()
+        .modelContainer(modelContainer)
     }
+  }
+
+  init() {
+    let schema = Schema([Collection.self, Place.self])
+    let config = ModelConfiguration("Atlas", schema: schema)
+    do {
+      modelContainer = try ModelContainer(for: schema, configurations: config)
+    } catch {
+      fatalError("Failed to initialize ModelContainer: \(error)")
+    }
+  }
 }
