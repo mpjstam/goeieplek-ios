@@ -29,7 +29,7 @@ struct CollectionDetailView: View {
         .background(.gray.opacity(0.05))
       } else {
         List(collection.places) { place in
-          NavigationLink(destination: PlaceDetailView(place: place)) {
+          NavigationLink(destination: PlaceDetailView(place: place, repository: repository)) {
             VStack(alignment: .leading, spacing: 4) {
               Text(place.name)
                 .font(.headline)

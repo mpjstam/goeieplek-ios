@@ -3,8 +3,15 @@ import MapKit
 
 struct PlaceDetailView: View {
   let place: Place
+  let repository: CollectionsRepository
 
   @State private var position: MapCameraPosition = .automatic
+  @State private var showingEdit = false
+  @State private var editName = ""
+  @State private var editNotes = ""
+  @State private var editCategory = "restaurant"
+  @State private var showingDeleteConfirm = false
+  @Environment(\.dismiss) var dismiss
 
   var body: some View {
     ScrollView {
@@ -81,6 +88,80 @@ struct PlaceDetailView: View {
     }
     .navigationTitle("Place")
     .navigationBarTitleDisplayMode(.inline)
+    .toolbar {
+      ToolbarItem(placement: .primaryAction) {
+        Button(action: {
+          editName = place.name
+          editNotes = place.notes
+          editCategory = place.category
+          showingEdit = true
+        }) {
+          Image(systemName: "pencil")
+        }
+      }
+      ToolbarItem(placement: .secondaryAction) {
+        Button(role: .destructive, action: {
+          showingDeleteConfirm = true
+        }) {
+          Image(systemName: "trash")
+        }
+      }
+    }
+    .confirmationDialog("Delete Place", isPresented: $showingDeleteConfirm) {
+      Button("Delete", role: .destructive) {
+        do {
+          try repository.deletePlace(place)
+          dismiss()
+        } catch {
+          print("Error deleting place: \(error)")
+        }
+      }
+    } message: {
+      Text("Are you sure you want to delete this place? This action cannot be undone.")
+    }
+    .sheet(isPresented: $showingEdit) {
+      NavigationStack {
+        Form {
+          Section("Name") {
+            TextField("Place name", text: $editName)
+          }
+          Section("Notes") {
+            TextEditor(text: $editNotes)
+              .frame(height: 100)
+          }
+          Section("Category") {
+            Picker("Category", selection: $editCategory) {
+              Text("Restaurant").tag("restaurant")
+              Text("Hotel").tag("hotel")
+              Text("Viewpoint").tag("viewpoint")
+              Text("Activity").tag("activity")
+              Text("Parking").tag("parking")
+              Text("Other").tag("other")
+            }
+          }
+        }
+        .navigationTitle("Edit Place")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+          ToolbarItem(placement: .cancellationAction) {
+            Button("Cancel") {
+              showingEdit = false
+            }
+          }
+          ToolbarItem(placement: .confirmationAction) {
+            Button("Save") {
+              do {
+                try repository.updatePlace(place, name: editName, notes: editNotes, category: editCategory)
+                showingEdit = false
+              } catch {
+                print("Error updating place: \(error)")
+              }
+            }
+            .disabled(editName.isEmpty)
+          }
+        }
+      }
+    }
     .onAppear {
       position = .region(
         MKCoordinateRegion(
