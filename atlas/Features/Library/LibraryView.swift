@@ -123,10 +123,7 @@ struct LibraryView: View {
       .foregroundStyle(AtlasColor.text)
 
       HStack(spacing: 10) {
-        // The zoomed rainbow-arc crop used on the actual App Icon — deliberately
-        // not `AtlasMark` (the full arc-and-pin drawing used on the splash screen).
-        Image("AppIconCrop")
-          .resizable()
+        AtlasMark(includesRing: false)
           .frame(width: 28, height: 28)
           .accessibilityHidden(true)
         Text("Goeieplek")
