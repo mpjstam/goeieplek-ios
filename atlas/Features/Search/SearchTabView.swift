@@ -1,0 +1,443 @@
+import SwiftUI
+import SwiftData
+import OSLog
+
+/// Screen 06 — Search. Find a place to add, from anywhere in the app.
+///
+/// The design shows an inline **Add** on each result but does not say which
+/// collection receives it, so Add offers the collection list. When only one
+/// collection exists it is chosen without a prompt, keeping capture fast.
+struct SearchTabView: View {
+  @Environment(\.modelContext) private var modelContext
+  @Environment(PendingShareRequest.self) private var pendingShare
+  @FocusState private var isSearchFieldFocused: Bool
+
+  @State private var searchText = ""
+  @State private var searchCompleter = PlaceSearchCompleter()
+  /// A single already-resolved result pinned above the suggestion list — used
+  /// only by `presentSingleResult`'s no-collections fallback, since a
+  /// suggestion from `searchCompleter` can't represent an already-resolved
+  /// current-location/pasted-link result.
+  @State private var pinnedResult: PlaceSearchResult?
+  @State private var selectedID: String?
+  @State private var collections: [Collection] = []
+  @State private var pendingAdd: PendingAdd?
+  @State private var isLocating = false
+  @State private var isPasting = false
+  @State private var locationErrorMessage: String?
+  @State private var shareNeedingCollection: PlaceSearchResult?
+  @State private var incomingShare: IncomingShare?
+
+  /// A share handed off from `AtlasShare`, shown as a standing banner rather
+  /// than popped as a sheet/dialog the instant it resolves — the extension
+  /// can't reliably bring Atlas to the foreground, so by the time this
+  /// resolves the user may be looking at something else entirely. The banner
+  /// stays put until they notice and tap it, instead of ambushing them.
+  private enum IncomingShare {
+    case loading
+    case ready(PlaceSearchResult)
+    case failed(String)
+  }
+
+  @State private var locationService = CurrentLocationService()
+
+  /// A chosen result plus the collection it will be saved into.
+  private struct PendingAdd: Identifiable {
+    let id = UUID()
+    let place: PendingPlace
+    let collection: Collection
+  }
+
+  var body: some View {
+    NavigationStack {
+      VStack(spacing: 0) {
+        Text("Search")
+          .font(AtlasFont.screenTitle)
+          .foregroundStyle(AtlasColor.text)
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .padding(.horizontal, AtlasSpacing.screenHorizontal)
+          .padding(.top, AtlasSpacing.s)
+          .padding(.bottom, 14)
+
+        incomingShareBanner
+
+        AtlasSearchField(text: $searchText, isFocused: $isSearchFieldFocused)
+          .padding(.horizontal, AtlasSpacing.screenHorizontal)
+          .padding(.bottom, 14)
+
+        CurrentLocationRow(isLoading: isLocating, action: useCurrentLocation)
+        PasteLocationRow(isLoading: isPasting, action: pasteFromMaps)
+        AtlasDivider()
+        content
+      }
+      .background(AtlasColor.background)
+      .toolbar(.hidden, for: .navigationBar)
+    }
+    .onAppear {
+      loadCollections()
+      resolvePendingShare()
+    }
+    .onChange(of: searchText) { _, query in updateCompleterQuery(query) }
+    .onChange(of: pendingShare.urlString) { _, _ in resolvePendingShare() }
+    .sheet(item: $pendingAdd) { pending in
+      AddPlaceDetailsView(
+        place: pending.place,
+        onSave: { notes, category, photoDatas in
+          save(pending, notes: notes, category: category, photoDatas: photoDatas)
+        },
+        onCancel: { pendingAdd = nil }
+      )
+    }
+    .sheet(item: $shareNeedingCollection) { result in
+      collectionPickerSheet(for: result)
+    }
+    .alert(
+      "Location Unavailable",
+      isPresented: Binding(
+        get: { locationErrorMessage != nil },
+        set: { if !$0 { locationErrorMessage = nil } }
+      )
+    ) {
+      Button("OK", role: .cancel) { locationErrorMessage = nil }
+    } message: {
+      Text(locationErrorMessage ?? "")
+    }
+  }
+
+  @ViewBuilder
+  private var incomingShareBanner: some View {
+    if let incomingShare {
+      VStack(spacing: 0) {
+        switch incomingShare {
+        case .loading:
+          bannerRow(
+            icon: "mappin.circle.fill",
+            title: "Importing shared location…",
+            subtitle: "From Maps"
+          ) {
+            ProgressView()
+          }
+        case .ready(let result):
+          Button {
+            self.incomingShare = nil
+            presentSingleResult(result)
+          } label: {
+            bannerRow(
+              icon: "mappin.circle.fill",
+              title: result.name,
+              subtitle: "\(result.subtitle) — tap to add"
+            ) {
+              Image(systemName: "chevron.right")
+                .foregroundStyle(AtlasColor.textSecondary)
+            }
+          }
+          .buttonStyle(.plain)
+        case .failed(let message):
+          bannerRow(
+            icon: "exclamationmark.triangle.fill",
+            title: "Couldn't import shared location",
+            subtitle: message
+          ) {
+            Button {
+              self.incomingShare = nil
+            } label: {
+              Image(systemName: "xmark.circle.fill")
+                .foregroundStyle(AtlasColor.textSecondary)
+            }
+            .accessibilityLabel("Dismiss")
+          }
+        }
+        AtlasDivider()
+      }
+    }
+  }
+
+  private func bannerRow<Trailing: View>(
+    icon: String,
+    title: String,
+    subtitle: String,
+    @ViewBuilder trailing: () -> Trailing
+  ) -> some View {
+    HStack(spacing: AtlasSpacing.m) {
+      Image(systemName: icon)
+        .font(.system(size: 20))
+        .foregroundStyle(AtlasColor.accent)
+      VStack(alignment: .leading, spacing: 2) {
+        Text(title)
+          .font(AtlasFont.rowTitle)
+          .foregroundStyle(AtlasColor.text)
+          .lineLimit(1)
+        Text(subtitle)
+          .font(AtlasFont.caption)
+          .foregroundStyle(AtlasColor.textSecondary)
+          .lineLimit(1)
+      }
+      Spacer(minLength: 0)
+      trailing()
+    }
+    .padding(.horizontal, AtlasSpacing.screenHorizontal)
+    .padding(.vertical, AtlasSpacing.m)
+    .background(AtlasColor.accent100)
+  }
+
+  /// A proper modal rather than a `confirmationDialog` — an action sheet needs
+  /// a stable source view to anchor its arrow to, and the row that triggers
+  /// this (the incoming-share banner) removes itself from the hierarchy in
+  /// the same tap that opens the picker, leaving the arrow pointing at
+  /// nothing. A sheet has no such anchor to lose.
+  private func collectionPickerSheet(for result: PlaceSearchResult) -> some View {
+    NavigationStack {
+      List(collections) { collection in
+        Button {
+          begin(result, into: collection)
+          shareNeedingCollection = nil
+        } label: {
+          Text(collection.name)
+            .font(AtlasFont.rowTitle)
+            .foregroundStyle(AtlasColor.text)
+        }
+      }
+      .listStyle(.plain)
+      .navigationTitle("Add to Collection")
+      .navigationBarTitleDisplayMode(.inline)
+      .toolbar {
+        ToolbarItem(placement: .cancellationAction) {
+          Button("Cancel") { shareNeedingCollection = nil }
+        }
+      }
+    }
+    .presentationDetents([.medium])
+  }
+
+  @ViewBuilder
+  private var content: some View {
+    let isEmpty = pinnedResult == nil && searchCompleter.suggestions.isEmpty
+    if isEmpty && !searchText.isEmpty {
+      SearchPlaceholder(systemImage: "magnifyingglass", message: "No places found")
+    } else if isEmpty {
+      SearchPlaceholder(systemImage: "map", message: "Find a place to add")
+    } else {
+      resultsList
+    }
+  }
+
+  private var resultsList: some View {
+    ScrollView {
+      LazyVStack(spacing: 0) {
+        if let pinnedResult {
+          Button {
+            isSearchFieldFocused = false
+            selectedID = pinnedResult.id
+          } label: {
+            PlaceResultRow(result: pinnedResult, isSelected: pinnedResult.id == selectedID) {
+              // Only ever shown when there are no collections to add to yet —
+              // see `pinnedResult`'s doc comment.
+              if pinnedResult.id == selectedID {
+                Text("No collections")
+                  .font(AtlasFont.caption)
+                  .foregroundStyle(AtlasColor.textSecondary)
+              }
+            }
+          }
+          .buttonStyle(.plain)
+          AtlasDivider()
+        }
+
+        ForEach(searchCompleter.suggestions) { suggestion in
+          Button {
+            isSearchFieldFocused = false
+            selectedID = suggestion.id
+          } label: {
+            PlaceResultRow(title: highlightedTitle(suggestion), subtitle: suggestion.subtitle, isSelected: suggestion.id == selectedID) {
+              if suggestion.id == selectedID {
+                addControl(for: suggestion)
+              }
+            }
+          }
+          .buttonStyle(.plain)
+          AtlasDivider()
+        }
+      }
+    }
+    .scrollDismissesKeyboard(.immediately)
+  }
+
+  /// Bolds the substring(s) of a suggestion's title that matched the typed
+  /// query — the same highlighting Spotlight/Maps show in their own
+  /// suggestion lists, and the main visual payoff of using a completer at all.
+  private func highlightedTitle(_ suggestion: PlaceSearchSuggestion) -> AttributedString {
+    var attributed = AttributedString(suggestion.title)
+    for nsRange in suggestion.titleHighlightRanges {
+      guard let stringRange = Range(nsRange, in: suggestion.title),
+            let attributedRange = Range(stringRange, in: attributed)
+      else { continue }
+      attributed[attributedRange].font = AtlasFont.resultTitle.bold()
+    }
+    return attributed
+  }
+
+  @ViewBuilder
+  private func addControl(for suggestion: PlaceSearchSuggestion) -> some View {
+    if collections.isEmpty {
+      Text("No collections")
+        .font(AtlasFont.caption)
+        .foregroundStyle(AtlasColor.textSecondary)
+    } else if collections.count == 1, let only = collections.first {
+      addButton { resolveAndAdd(suggestion, into: only) }
+    } else {
+      Menu {
+        ForEach(collections) { collection in
+          Button(collection.name) { resolveAndAdd(suggestion, into: collection) }
+        }
+      } label: {
+        addLabel
+      }
+      .accessibilityLabel("Add \(suggestion.title) to a collection")
+    }
+  }
+
+  /// The suggestion's coordinate is resolved here, on "Add" — the one point in
+  /// this flow that actually needs it, rather than up front for every
+  /// suggestion the completer returns.
+  private func resolveAndAdd(_ suggestion: PlaceSearchSuggestion, into collection: Collection) {
+    Task {
+      do {
+        let result = try await searchCompleter.resolve(suggestion)
+        begin(result, into: collection)
+      } catch {
+        AtlasLog.search.error("Failed to resolve suggestion: \(error.localizedDescription, privacy: .public)")
+        locationErrorMessage = error.localizedDescription
+      }
+    }
+  }
+
+  private func addButton(action: @escaping () -> Void) -> some View {
+    Button(action: action) { addLabel }
+      .buttonStyle(.plain)
+      .accessibilityLabel("Add to collection")
+  }
+
+  private var addLabel: some View {
+    Text("Add")
+      .font(AtlasFont.rowAction)
+      .foregroundStyle(AtlasColor.background)
+      .padding(.horizontal, 14)
+      .padding(.vertical, 6)
+      .background(AtlasColor.accent)
+  }
+
+  // MARK: - Actions
+
+  private func useCurrentLocation() {
+    isSearchFieldFocused = false
+    isLocating = true
+    Task {
+      do {
+        presentSingleResult(try await locationService.currentPlace())
+      } catch {
+        AtlasLog.search.error("Current location failed: \(error.localizedDescription, privacy: .public)")
+        locationErrorMessage = error.localizedDescription
+      }
+      isLocating = false
+    }
+  }
+
+  private func pasteFromMaps() {
+    isSearchFieldFocused = false
+    isPasting = true
+    Task {
+      do {
+        presentSingleResult(try await MapsLinkImport.resolveFromClipboard())
+      } catch {
+        AtlasLog.search.error("Maps paste failed: \(error.localizedDescription, privacy: .public)")
+        locationErrorMessage = error.localizedDescription
+      }
+      isPasting = false
+    }
+  }
+
+  /// Picks up a link handed off by `RootView` from the `AtlasShare` extension
+  /// (see `MapsShareInbox`) and resolves it the same way a pasted link
+  /// is — but into the standing `incomingShare` banner rather than straight
+  /// into a sheet, since resolving can take a moment and the user may not
+  /// even be looking at this tab when it finishes.
+  private func resolvePendingShare() {
+    guard let urlString = pendingShare.urlString, let url = URL(string: urlString) else { return }
+    pendingShare.urlString = nil
+    incomingShare = .loading
+    Task {
+      do {
+        incomingShare = .ready(try await MapsLinkImport.resolve(url: url))
+      } catch {
+        AtlasLog.search.error("Shared maps link failed: \(error.localizedDescription, privacy: .public)")
+        incomingShare = .failed(error.localizedDescription)
+      }
+    }
+  }
+
+  /// A place from current-location or paste is unambiguous — there's nothing to
+  /// browse, so it skips straight to the same add-details sheet a typed search
+  /// result reaches after "Add", rather than sitting in the results list waiting
+  /// for a tap. Only falls back to the list when there's no collection to add it to.
+  private func presentSingleResult(_ result: PlaceSearchResult) {
+    if collections.count == 1, let only = collections.first {
+      begin(result, into: only)
+    } else if collections.count > 1 {
+      shareNeedingCollection = result
+    } else {
+      pinnedResult = result
+      selectedID = result.id
+    }
+  }
+
+  private func begin(_ result: PlaceSearchResult, into collection: Collection) {
+    pendingAdd = PendingAdd(
+      place: PendingPlace(
+        name: result.name,
+        latitude: result.latitude,
+        longitude: result.longitude
+      ),
+      collection: collection
+    )
+  }
+
+  private func save(_ pending: PendingAdd, notes: String, category: String, photoDatas: [Data]) {
+    do {
+      _ = try CollectionsRepository(modelContext: modelContext).addPlace(
+        to: pending.collection,
+        name: pending.place.name,
+        notes: notes,
+        latitude: pending.place.latitude,
+        longitude: pending.place.longitude,
+        category: category,
+        photoDatas: photoDatas
+      )
+      selectedID = nil
+    } catch {
+      AtlasLog.search.error("Failed to add place: \(error.localizedDescription, privacy: .public)")
+    }
+    pendingAdd = nil
+  }
+
+  private func loadCollections() {
+    do {
+      collections = try CollectionsRepository(modelContext: modelContext).fetchCollections()
+    } catch {
+      AtlasLog.search.error("Failed to load collections: \(error.localizedDescription, privacy: .public)")
+    }
+  }
+
+  /// `MKLocalSearchCompleter` does its own internal debouncing/coalescing, so
+  /// unlike the old `MKLocalSearch`-per-keystroke approach this needs no
+  /// manual `Task.sleep` debounce of its own.
+  private func updateCompleterQuery(_ query: String) {
+    selectedID = nil
+    pinnedResult = nil
+    let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+    if trimmed.isEmpty {
+      searchCompleter.clear()
+    } else {
+      searchCompleter.queryFragment = trimmed
+    }
+  }
+}
