@@ -31,16 +31,16 @@ final class MapViewModel {
   }
 
   var filterLabel: String {
-    selectedCategory?.capitalized ?? "All categories"
+    selectedCategory?.capitalized ?? "Alle categorieën"
   }
 
   var summary: String {
     let count = visiblePlaces.count
-    return count == 1 ? "1 place" : "\(count) places"
+    return count == 1 ? "1 plek" : "\(count) plekken"
   }
 
   var subtitle: String {
-    collectionCount == 1 ? "across 1 collection" : "across \(collectionCount) collections"
+    collectionCount == 1 ? "in 1 collectie" : "in \(collectionCount) collecties"
   }
 
   func load() {

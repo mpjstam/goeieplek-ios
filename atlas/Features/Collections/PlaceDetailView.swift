@@ -51,7 +51,7 @@ struct PlaceDetailView: View {
         Button { showingEdit = true } label: {
           Image(systemName: "pencil")
         }
-        .accessibilityLabel("Edit place")
+        .accessibilityLabel("Plek bewerken")
 
         Menu {
           ForEach(otherCollections) { collection in
@@ -61,20 +61,20 @@ struct PlaceDetailView: View {
           Image(systemName: "folder")
         }
         .disabled(otherCollections.isEmpty)
-        .accessibilityLabel("Move to another collection")
+        .accessibilityLabel("Verplaats naar andere collectie")
 
         Button { showingDeleteConfirm = true } label: {
           Image(systemName: "trash")
         }
         .tint(.red)
-        .accessibilityLabel("Delete place")
+        .accessibilityLabel("Plek verwijderen")
       }
     }
     .tint(AtlasColor.accent)
-    .confirmationDialog("Delete Place", isPresented: $showingDeleteConfirm) {
-      Button("Delete", role: .destructive, action: deletePlace)
+    .confirmationDialog("Plek verwijderen", isPresented: $showingDeleteConfirm) {
+      Button("Verwijder", role: .destructive, action: deletePlace)
     } message: {
-      Text("Are you sure you want to delete this place? This action cannot be undone.")
+      Text("Weet je zeker dat je deze plek wilt verwijderen? Dit kan niet ongedaan gemaakt worden.")
     }
     .sheet(isPresented: $showingEdit) { editSheet }
     .onAppear {
@@ -114,7 +114,7 @@ struct PlaceDetailView: View {
         .scrollTargetBehavior(.viewAligned)
         .scrollPosition(id: $currentPhotoID)
         .frame(height: 190)
-        .accessibilityLabel(photos.count == 1 ? "Photo of \(place.name)" : "\(photos.count) photos of \(place.name)")
+        .accessibilityLabel(photos.count == 1 ? "Foto van \(place.name)" : "\(photos.count) foto's van \(place.name)")
 
         if photos.count > 1 {
           AtlasTag(text: "\(currentPhotoNumber(in: photos)) / \(photos.count)")
@@ -151,12 +151,12 @@ struct PlaceDetailView: View {
     VStack(spacing: 0) {
       AtlasDivider()
       HStack(spacing: 0) {
-        coordinate("Latitude", value: place.latitude)
+        coordinate("Breedtegraad", value: place.latitude)
         Rectangle()
           .fill(AtlasColor.divider)
           .frame(width: AtlasSpacing.dividerWidth)
           .accessibilityHidden(true)
-        coordinate("Longitude", value: place.longitude)
+        coordinate("Lengtegraad", value: place.longitude)
           .padding(.leading, AtlasSpacing.l)
       }
       AtlasDivider()
@@ -195,14 +195,14 @@ struct PlaceDetailView: View {
     }
     .frame(height: 170)
     .padding(.top, AtlasSpacing.xl)
-    .accessibilityLabel("Show \(place.name) on the map")
+    .accessibilityLabel("Toon \(place.name) op de kaart")
     .accessibilityAddTraits(.isButton)
   }
 
   private var categoryRow: some View {
     VStack(spacing: 0) {
       HStack {
-        Text("Category").atlasMicroLabel()
+        Text("Categorie").atlasMicroLabel()
         Spacer()
         AtlasTag(category: place.category)
       }
@@ -215,7 +215,7 @@ struct PlaceDetailView: View {
 
   private var savedRow: some View {
     HStack {
-      Text("Saved").atlasMicroLabel()
+      Text("Bewaard").atlasMicroLabel()
       Spacer()
       Text(place.createdAt.formatted(date: .abbreviated, time: .omitted))
         .font(AtlasFont.body)
@@ -233,15 +233,15 @@ struct PlaceDetailView: View {
         AtlasDivider()
         ScrollView {
           VStack(alignment: .leading, spacing: 22) {
-            AtlasFormField(label: "Name") {
-              TextField("Place name", text: $editName)
+            AtlasFormField(label: "Naam") {
+              TextField("Naam van de plek", text: $editName)
                 .font(AtlasFont.bodyLarge)
                 .atlasInputBackground()
             }
 
-            AtlasFormField(label: "Notes") {
+            AtlasFormField(label: "Notities") {
               TextField(
-                "Why does this place matter?",
+                "Waarom is deze plek de moeite waard?",
                 text: $editNotes,
                 axis: .vertical
               )
@@ -250,7 +250,7 @@ struct PlaceDetailView: View {
               .atlasInputBackground()
             }
 
-            AtlasFormField(label: "Category") {
+            AtlasFormField(label: "Categorie") {
               AtlasSegmentedControl(options: categories.map(\.name), selection: $editCategory)
             }
 
@@ -260,14 +260,14 @@ struct PlaceDetailView: View {
         }
       }
       .background(AtlasColor.background)
-      .navigationTitle("Edit Place")
+      .navigationTitle("Plek bewerken")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") { showingEdit = false }
+          Button("Annuleer") { showingEdit = false }
         }
         ToolbarItem(placement: .confirmationAction) {
-          Button("Save", action: saveEdits)
+          Button("Bewaar", action: saveEdits)
             .disabled(editName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
       }

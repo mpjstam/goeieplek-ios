@@ -44,7 +44,7 @@ enum GoogleMapsLinkImport {
       return PlaceSearchResult(
         id: best.id,
         name: best.name,
-        subtitle: "From Google Maps",
+        subtitle: "Vanuit Google Maps",
         latitude: best.latitude,
         longitude: best.longitude
       )
@@ -56,7 +56,7 @@ enum GoogleMapsLinkImport {
   private static func result(name: String?, coordinate: CLLocationCoordinate2D) -> PlaceSearchResult {
     PlaceSearchResult(
       id: "google-maps-\(coordinate.latitude)-\(coordinate.longitude)",
-      name: name ?? "Shared Location",
+      name: name ?? "Gedeelde locatie",
       subtitle: "From Google Maps",
       latitude: coordinate.latitude,
       longitude: coordinate.longitude

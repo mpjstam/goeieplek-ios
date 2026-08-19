@@ -27,6 +27,11 @@ struct SearchTabView: View {
   @State private var locationErrorMessage: String?
   @State private var shareNeedingCollection: PlaceSearchResult?
   @State private var incomingShare: IncomingShare?
+  /// Set when the user has no collections yet and taps "New Collection" from
+  /// a result — the sheet it drives creates the collection, then saves this
+  /// already-resolved result straight into it.
+  @State private var newCollectionTarget: PlaceSearchResult?
+  @State private var newCollectionName = ""
 
   /// A share handed off from `AtlasShare`, shown as a standing banner rather
   /// than popped as a sheet/dialog the instant it resolves — the extension
@@ -51,7 +56,7 @@ struct SearchTabView: View {
   var body: some View {
     NavigationStack {
       VStack(spacing: 0) {
-        Text("Search")
+        Text("Zoeken")
           .font(AtlasFont.screenTitle)
           .foregroundStyle(AtlasColor.text)
           .frame(maxWidth: .infinity, alignment: .leading)
@@ -91,8 +96,11 @@ struct SearchTabView: View {
     .sheet(item: $shareNeedingCollection) { result in
       collectionPickerSheet(for: result)
     }
+    .sheet(item: $newCollectionTarget) { result in
+      newCollectionSheet(for: result)
+    }
     .alert(
-      "Location Unavailable",
+      "Locatie niet beschikbaar",
       isPresented: Binding(
         get: { locationErrorMessage != nil },
         set: { if !$0 { locationErrorMessage = nil } }
@@ -112,8 +120,8 @@ struct SearchTabView: View {
         case .loading:
           bannerRow(
             icon: "mappin.circle.fill",
-            title: "Importing shared location…",
-            subtitle: "From Maps"
+            title: "Gedeelde locatie importeren…",
+            subtitle: "Vanuit Maps"
           ) {
             ProgressView()
           }
@@ -125,7 +133,7 @@ struct SearchTabView: View {
             bannerRow(
               icon: "mappin.circle.fill",
               title: result.name,
-              subtitle: "\(result.subtitle) — tap to add"
+              subtitle: "\(result.subtitle) — tik om toe te voegen"
             ) {
               Image(systemName: "chevron.right")
                 .foregroundStyle(AtlasColor.textSecondary)
@@ -135,7 +143,7 @@ struct SearchTabView: View {
         case .failed(let message):
           bannerRow(
             icon: "exclamationmark.triangle.fill",
-            title: "Couldn't import shared location",
+            title: "Kon gedeelde locatie niet importeren",
             subtitle: message
           ) {
             Button {
@@ -144,7 +152,7 @@ struct SearchTabView: View {
               Image(systemName: "xmark.circle.fill")
                 .foregroundStyle(AtlasColor.textSecondary)
             }
-            .accessibilityLabel("Dismiss")
+            .accessibilityLabel("Sluiten")
           }
         }
         AtlasDivider()
@@ -198,24 +206,64 @@ struct SearchTabView: View {
         }
       }
       .listStyle(.plain)
-      .navigationTitle("Add to Collection")
+      .navigationTitle("Voeg toe aan collectie")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") { shareNeedingCollection = nil }
+          Button("Annuleer") { shareNeedingCollection = nil }
         }
       }
     }
     .presentationDetents([.medium])
   }
 
+  /// Reached when there are no collections yet — names one, creates it, and
+  /// saves `result` straight into it, so importing your first place doesn't
+  /// require a separate trip to the Library tab first.
+  private func newCollectionSheet(for result: PlaceSearchResult) -> some View {
+    NavigationStack {
+      Form {
+        TextField("Naam van de collectie", text: $newCollectionName)
+      }
+      .navigationTitle("Nieuwe collectie")
+      .navigationBarTitleDisplayMode(.inline)
+      .toolbar {
+        ToolbarItem(placement: .cancellationAction) {
+          Button("Annuleer") {
+            newCollectionTarget = nil
+            newCollectionName = ""
+          }
+        }
+        ToolbarItem(placement: .confirmationAction) {
+          Button("Maak aan") { createCollectionAndBegin(result) }
+            .disabled(newCollectionName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        }
+      }
+    }
+    .presentationDetents([.medium])
+  }
+
+  private func createCollectionAndBegin(_ result: PlaceSearchResult) {
+    let trimmed = newCollectionName.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmed.isEmpty else { return }
+    do {
+      let collection = try CollectionsRepository(modelContext: modelContext).createCollection(name: trimmed)
+      collections.append(collection)
+      newCollectionTarget = nil
+      newCollectionName = ""
+      begin(result, into: collection)
+    } catch {
+      AtlasLog.search.error("Failed to create collection: \(error.localizedDescription, privacy: .public)")
+    }
+  }
+
   @ViewBuilder
   private var content: some View {
     let isEmpty = pinnedResult == nil && searchCompleter.suggestions.isEmpty
     if isEmpty && !searchText.isEmpty {
-      SearchPlaceholder(systemImage: "magnifyingglass", message: "No places found")
+      SearchPlaceholder(systemImage: "magnifyingglass", message: "Geen plekken gevonden")
     } else if isEmpty {
-      SearchPlaceholder(systemImage: "map", message: "Find a place to add")
+      SearchPlaceholder(systemImage: "map", message: "Zoek een plek om toe te voegen")
     } else {
       resultsList
     }
@@ -233,9 +281,7 @@ struct SearchTabView: View {
               // Only ever shown when there are no collections to add to yet —
               // see `pinnedResult`'s doc comment.
               if pinnedResult.id == selectedID {
-                Text("No collections")
-                  .font(AtlasFont.caption)
-                  .foregroundStyle(AtlasColor.textSecondary)
+                newCollectionButton { newCollectionTarget = pinnedResult }
               }
             }
           }
@@ -279,9 +325,7 @@ struct SearchTabView: View {
   @ViewBuilder
   private func addControl(for suggestion: PlaceSearchSuggestion) -> some View {
     if collections.isEmpty {
-      Text("No collections")
-        .font(AtlasFont.caption)
-        .foregroundStyle(AtlasColor.textSecondary)
+      newCollectionButton { resolveForNewCollection(suggestion) }
     } else if collections.count == 1, let only = collections.first {
       addButton { resolveAndAdd(suggestion, into: only) }
     } else {
@@ -292,7 +336,7 @@ struct SearchTabView: View {
       } label: {
         addLabel
       }
-      .accessibilityLabel("Add \(suggestion.title) to a collection")
+      .accessibilityLabel("Voeg \(suggestion.title) toe aan een collectie")
     }
   }
 
@@ -311,14 +355,44 @@ struct SearchTabView: View {
     }
   }
 
+  /// Same resolution step as `resolveAndAdd`, but for the no-collections-yet
+  /// case — opens `newCollectionSheet` with the resolved result once it's in
+  /// hand, instead of adding straight into an (nonexistent) collection.
+  private func resolveForNewCollection(_ suggestion: PlaceSearchSuggestion) {
+    Task {
+      do {
+        newCollectionTarget = try await searchCompleter.resolve(suggestion)
+      } catch {
+        AtlasLog.search.error("Failed to resolve suggestion: \(error.localizedDescription, privacy: .public)")
+        locationErrorMessage = error.localizedDescription
+      }
+    }
+  }
+
   private func addButton(action: @escaping () -> Void) -> some View {
-    Button(action: action) { addLabel }
-      .buttonStyle(.plain)
-      .accessibilityLabel("Add to collection")
+    pillButton("Voeg toe", accessibilityLabel: "Voeg toe aan collectie", action: action)
   }
 
   private var addLabel: some View {
-    Text("Add")
+    pillLabel("Voeg toe")
+  }
+
+  /// Shown in place of `addButton` when there are no collections yet to add
+  /// into — starts the same "New Collection" flow the Library tab's own
+  /// empty state points at, so importing your first place doesn't require a
+  /// detour there first.
+  private func newCollectionButton(action: @escaping () -> Void) -> some View {
+    pillButton("Nieuwe collectie", accessibilityLabel: "Maak een collectie aan en voeg deze plek toe", action: action)
+  }
+
+  private func pillButton(_ title: String, accessibilityLabel: String, action: @escaping () -> Void) -> some View {
+    Button(action: action) { pillLabel(title) }
+      .buttonStyle(.plain)
+      .accessibilityLabel(accessibilityLabel)
+  }
+
+  private func pillLabel(_ title: String) -> some View {
+    Text(title)
       .font(AtlasFont.rowAction)
       .foregroundStyle(AtlasColor.background)
       .padding(.horizontal, 14)

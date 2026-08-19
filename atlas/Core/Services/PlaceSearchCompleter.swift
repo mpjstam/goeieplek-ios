@@ -23,8 +23,8 @@ enum PlaceSearchCompleterError: LocalizedError {
 
   var errorDescription: String? {
     switch self {
-    case .expiredSuggestion: "That suggestion is no longer available. Try searching again."
-    case .noResult: "Couldn't find a location for that suggestion."
+    case .expiredSuggestion: "Deze suggestie is niet meer beschikbaar. Probeer opnieuw te zoeken."
+    case .noResult: "Kon geen locatie vinden voor deze suggestie."
     }
   }
 }

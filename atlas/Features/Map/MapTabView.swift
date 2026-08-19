@@ -14,7 +14,7 @@ struct MapTabView: View {
   var body: some View {
     NavigationStack(path: $navigationPath) {
       VStack(spacing: 0) {
-        Text("Map")
+        Text("Kaart")
           .font(AtlasFont.screenTitle)
           .foregroundStyle(AtlasColor.text)
           .frame(maxWidth: .infinity, alignment: .leading)
@@ -103,14 +103,14 @@ struct MapTabView: View {
       Spacer()
 
       Menu {
-        Button("All categories") { viewModel.selectedCategory = nil }
+        Button("Alle categorieën") { viewModel.selectedCategory = nil }
         ForEach(viewModel.categories, id: \.self) { category in
           Button(category.capitalized) { viewModel.selectedCategory = category }
         }
       } label: {
         AtlasTag(text: viewModel.filterLabel, style: .outline)
       }
-      .accessibilityLabel("Filter by category, currently \(viewModel.filterLabel)")
+      .accessibilityLabel("Filter op categorie, nu \(viewModel.filterLabel)")
     }
     .padding(.horizontal, AtlasSpacing.screenHorizontal)
     .padding(.vertical, AtlasSpacing.l)

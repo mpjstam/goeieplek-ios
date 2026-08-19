@@ -21,7 +21,7 @@ struct CategoriesView: View {
   var body: some View {
     NavigationStack {
       VStack(spacing: 0) {
-        Text("Categories")
+        Text("Categorieën")
           .font(AtlasFont.screenTitle)
           .foregroundStyle(AtlasColor.text)
           .frame(maxWidth: .infinity, alignment: .leading)
@@ -44,7 +44,7 @@ struct CategoriesView: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          Button("Done") { dismiss() }
+          Button("Gereed") { dismiss() }
             .font(AtlasFont.body)
             .foregroundStyle(AtlasColor.textSecondary)
         }
@@ -52,17 +52,17 @@ struct CategoriesView: View {
           Button { showingAdd = true } label: {
             Image(systemName: "plus")
           }
-          .accessibilityLabel("Add category")
+          .accessibilityLabel("Categorie toevoegen")
         }
       }
       .tint(AtlasColor.accent)
       .sheet(isPresented: $showingAdd) { addSheet }
-      .alert("Rename Category", isPresented: renamingBinding) {
-        TextField("Category name", text: $renameText)
-        Button("Cancel", role: .cancel) { renamingCategory = nil }
-        Button("Save", action: rename)
+      .alert("Categorie hernoemen", isPresented: renamingBinding) {
+        TextField("Naam van de categorie", text: $renameText)
+        Button("Annuleer", role: .cancel) { renamingCategory = nil }
+        Button("Bewaar", action: rename)
       }
-      .alert("Can't Save Category", isPresented: errorBinding) {
+      .alert("Categorie kon niet bewaard worden", isPresented: errorBinding) {
         Button("OK", role: .cancel) { errorMessage = nil }
       } message: {
         Text(errorMessage ?? "")
@@ -82,13 +82,13 @@ struct CategoriesView: View {
         renamingCategory = category
         renameText = category.name
       } label: {
-        Text("Rename")
+        Text("Hernoem")
           .font(AtlasFont.rowAction)
           .textCase(.uppercase)
           .tracking(0.44)
           .foregroundStyle(AtlasColor.accent)
       }
-      .accessibilityLabel("Rename \(category.name)")
+      .accessibilityLabel("Hernoem \(category.name)")
 
       Button {
         delete(category)
@@ -97,7 +97,7 @@ struct CategoriesView: View {
           .font(AtlasFont.rowTitle)
           .foregroundStyle(AtlasColor.text)
       }
-      .accessibilityLabel("Delete \(category.name)")
+      .accessibilityLabel("Verwijder \(category.name)")
     }
     .padding(.horizontal, AtlasSpacing.screenHorizontal)
     .padding(.vertical, AtlasSpacing.l)
@@ -107,8 +107,8 @@ struct CategoriesView: View {
     NavigationStack {
       VStack(spacing: 0) {
         AtlasDivider()
-        AtlasFormField(label: "Name") {
-          TextField("Category name", text: $newCategoryName)
+        AtlasFormField(label: "Naam") {
+          TextField("Naam van de categorie", text: $newCategoryName)
             .font(AtlasFont.bodyLarge)
             .atlasInputBackground()
         }
@@ -116,17 +116,17 @@ struct CategoriesView: View {
         Spacer()
       }
       .background(AtlasColor.background)
-      .navigationTitle("New Category")
+      .navigationTitle("Nieuwe categorie")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") {
+          Button("Annuleer") {
             showingAdd = false
             newCategoryName = ""
           }
         }
         ToolbarItem(placement: .confirmationAction) {
-          Button("Add", action: addCategory)
+          Button("Voeg toe", action: addCategory)
             .disabled(newCategoryName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
       }

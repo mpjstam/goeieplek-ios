@@ -18,13 +18,13 @@ struct RootView: View {
   var body: some View {
     ZStack {
       TabView(selection: $selectedTab) {
-        Tab("LIBRARY", systemImage: "square.stack", value: .library) {
+        Tab("COLLECTIES", systemImage: "square.stack", value: .library) {
           LibraryView()
         }
-        Tab("MAP", systemImage: "map", value: .map) {
+        Tab("KAART", systemImage: "map", value: .map) {
           MapTabView()
         }
-        Tab("SEARCH", systemImage: "magnifyingglass", value: .search) {
+        Tab("ZOEKEN", systemImage: "magnifyingglass", value: .search) {
           SearchTabView()
         }
       }

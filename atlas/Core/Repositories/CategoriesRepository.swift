@@ -8,9 +8,9 @@ enum CategoryError: LocalizedError {
   var errorDescription: String? {
     switch self {
     case .cannotDeleteLastCategory:
-      return "You need at least one category."
+      return "Je hebt minstens één categorie nodig."
     case .duplicateName:
-      return "A category with that name already exists."
+      return "Er bestaat al een categorie met die naam."
     }
   }
 }
@@ -30,7 +30,7 @@ class CategoriesRepository {
 
   func seedDefaultsIfNeeded() throws {
     guard try fetchCategories().isEmpty else { return }
-    let defaults = ["restaurant", "hotel", "viewpoint", "activity", "parking", "other"]
+    let defaults = ["restaurant", "hotel", "uitzicht", "activiteit", "parkeren", "overig"]
     for (index, name) in defaults.enumerated() {
       modelContext.insert(Category(name: name, sortOrder: index))
     }

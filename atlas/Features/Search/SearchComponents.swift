@@ -3,7 +3,7 @@ import SwiftUI
 /// The design's search field: square, hairline-bordered, icon then text.
 struct AtlasSearchField: View {
   @Binding var text: String
-  var placeholder = "Search places"
+  var placeholder = "Zoek plekken"
   @FocusState.Binding var isFocused: Bool
 
   var body: some View {
@@ -27,7 +27,7 @@ struct AtlasSearchField: View {
           Image(systemName: "xmark.circle.fill")
             .foregroundStyle(AtlasColor.neutral500)
         }
-        .accessibilityLabel("Clear search")
+        .accessibilityLabel("Wis zoekopdracht")
       }
     }
     .padding(.horizontal, AtlasSpacing.m)
@@ -101,7 +101,7 @@ struct CurrentLocationRow: View {
           .foregroundStyle(AtlasColor.accent)
           .frame(width: 20)
 
-        Text("Use Current Location")
+        Text("Gebruik huidige locatie")
           .font(AtlasFont.resultTitle)
           .foregroundStyle(AtlasColor.accent)
 
@@ -117,7 +117,7 @@ struct CurrentLocationRow: View {
     }
     .buttonStyle(.plain)
     .disabled(isLoading)
-    .accessibilityLabel("Use current location")
+    .accessibilityLabel("Gebruik huidige locatie")
   }
 }
 
@@ -135,7 +135,7 @@ struct PasteLocationRow: View {
           .foregroundStyle(AtlasColor.accent)
           .frame(width: 20)
 
-        Text("Paste from Maps")
+        Text("Plak vanuit Maps")
           .font(AtlasFont.resultTitle)
           .foregroundStyle(AtlasColor.accent)
 
@@ -151,7 +151,7 @@ struct PasteLocationRow: View {
     }
     .buttonStyle(.plain)
     .disabled(isLoading)
-    .accessibilityLabel("Paste location from Apple Maps or Google Maps")
+    .accessibilityLabel("Plak locatie vanuit Apple Maps of Google Maps")
   }
 }
 

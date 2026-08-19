@@ -26,9 +26,9 @@ struct AddPlaceDetailsView: View {
               .font(AtlasFont.sheetTitle)
               .foregroundStyle(AtlasColor.text)
 
-            AtlasFormField(label: "Notes") {
+            AtlasFormField(label: "Notities") {
               TextField(
-                "Why does this place matter?",
+                "Waarom is deze plek de moeite waard?",
                 text: $notes,
                 axis: .vertical
               )
@@ -37,7 +37,7 @@ struct AddPlaceDetailsView: View {
               .atlasInputBackground()
             }
 
-            AtlasFormField(label: "Category") {
+            AtlasFormField(label: "Categorie") {
               AtlasSegmentedControl(options: categories.map(\.name), selection: $category)
             }
 
@@ -51,12 +51,12 @@ struct AddPlaceDetailsView: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel", action: onCancel)
+          Button("Annuleer", action: onCancel)
             .font(AtlasFont.body)
             .foregroundStyle(AtlasColor.textSecondary)
         }
         ToolbarItem(placement: .confirmationAction) {
-          Button("Save") {
+          Button("Bewaar") {
             onSave(notes, category, photoDatas)
           }
           .font(AtlasFont.action)
@@ -65,7 +65,7 @@ struct AddPlaceDetailsView: View {
       }
       .onAppear {
         if category.isEmpty {
-          category = categories.first?.name ?? "other"
+          category = categories.first?.name ?? "Overig"
         }
       }
     }

@@ -53,7 +53,7 @@ enum CollectionImportError: LocalizedError {
   case invalidFile
 
   var errorDescription: String? {
-    "Couldn't read this file. Make sure it's a collection shared from Goeieplek."
+    "Kon dit bestand niet lezen. Controleer of het een collectie is die is gedeeld vanuit Goeieplek."
   }
 }
 
@@ -68,7 +68,7 @@ nonisolated extension SharedCollection: Transferable {
     }
     .suggestedFileName { shared in
       let trimmed = shared.name.trimmingCharacters(in: .whitespacesAndNewlines)
-      let safeName = (trimmed.isEmpty ? "Collection" : trimmed)
+      let safeName = (trimmed.isEmpty ? "Collectie" : trimmed)
         .replacingOccurrences(of: "/", with: "-")
       return "\(safeName).atlascollection.json"
     }
@@ -111,7 +111,7 @@ nonisolated extension SharedLibrary: Transferable {
     .suggestedFileName { shared in
       let formatter = DateFormatter()
       formatter.dateFormat = "yyyy-MM-dd"
-      return "Goeieplek Backup \(formatter.string(from: .now)).atlaslibrary.json"
+      return "Goeieplek back-up \(formatter.string(from: .now)).atlaslibrary.json"
     }
   }
 

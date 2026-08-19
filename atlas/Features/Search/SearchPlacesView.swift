@@ -38,11 +38,11 @@ struct SearchPlacesView: View {
         content
       }
       .background(AtlasColor.background)
-      .navigationTitle("Search Place")
+      .navigationTitle("Zoek plek")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") { dismiss() }
+          Button("Annuleer") { dismiss() }
         }
       }
       .tint(AtlasColor.accent)
@@ -50,7 +50,7 @@ struct SearchPlacesView: View {
         scheduleSearch(query)
       }
       .alert(
-        "Location Unavailable",
+        "Locatie niet beschikbaar",
         isPresented: Binding(
           get: { locationErrorMessage != nil },
           set: { if !$0 { locationErrorMessage = nil } }
@@ -96,9 +96,9 @@ struct SearchPlacesView: View {
     if let selected {
       preview(selected)
     } else if results.isEmpty && !searchText.isEmpty {
-      SearchPlaceholder(systemImage: "magnifyingglass", message: "No places found")
+      SearchPlaceholder(systemImage: "magnifyingglass", message: "Geen plekken gevonden")
     } else if results.isEmpty {
-      SearchPlaceholder(systemImage: "map", message: "Search for a place")
+      SearchPlaceholder(systemImage: "map", message: "Zoek naar een plek")
     } else {
       resultsList
     }
@@ -134,7 +134,7 @@ struct SearchPlacesView: View {
           .tint(AtlasColor.accent)
       }
       .frame(height: 200)
-      .accessibilityLabel("Map showing \(result.name)")
+      .accessibilityLabel("Kaart met \(result.name)")
 
       VStack(alignment: .leading, spacing: AtlasSpacing.xs) {
         Text(result.name)
@@ -152,7 +152,7 @@ struct SearchPlacesView: View {
       Button {
         onPlaceSelected(result.name, result.latitude, result.longitude)
       } label: {
-        Text("Confirm & Add Details")
+        Text("Bevestig & voeg details toe")
           .font(AtlasFont.action)
           .foregroundStyle(AtlasColor.background)
           .frame(maxWidth: .infinity)
@@ -162,7 +162,7 @@ struct SearchPlacesView: View {
       .buttonStyle(.plain)
       .padding(.horizontal, AtlasSpacing.screenHorizontal)
 
-      Button("Choose a different place") {
+      Button("Kies een andere plek") {
         selected = nil
       }
       .font(AtlasFont.body)

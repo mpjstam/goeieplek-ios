@@ -45,7 +45,7 @@ final class ShareViewController: UIViewController {
 
     spinner.startAnimating()
 
-    statusLabel.text = "Saving to Goeieplek…"
+    statusLabel.text = "Opslaan in Goeieplek…"
     statusLabel.font = .preferredFont(forTextStyle: .body)
     statusLabel.textColor = .label
     statusLabel.textAlignment = .center
@@ -77,22 +77,22 @@ final class ShareViewController: UIViewController {
         guard let self else { return }
         print("[AtlasShare] extracted shared text: \(shared ?? "nil")")
         guard let shared else {
-          self.finish(showing: "Couldn't read that link.")
+          self.finish(showing: "Kon die link niet lezen.")
           return
         }
         let outcome = self.persist(shared)
         print("[AtlasShare] persist outcome: \(outcome)")
         switch outcome {
         case .success:
-          self.finish(showing: "Saved to Goeieplek")
+          self.finish(showing: "Opgeslagen in Goeieplek")
         case .containerUnavailable:
           // `containerURL(forSecurityApplicationGroupIdentifier:)` returned nil —
           // the App Group entitlement itself isn't being granted to this process,
           // regardless of which API is used to write into it. Say so plainly rather
           // than silently completing as if it worked.
-          self.finish(showing: "Couldn't reach Goeieplek's shared storage.\n(App Group unavailable)")
+          self.finish(showing: "Kon de gedeelde opslag van Goeieplek niet bereiken.\n(App Group niet beschikbaar)")
         case .writeFailed:
-          self.finish(showing: "Couldn't save that link.")
+          self.finish(showing: "Kon die link niet opslaan.")
         }
       }
     }

@@ -11,15 +11,15 @@ enum MapsLinkError: LocalizedError {
   var errorDescription: String? {
     switch self {
     case .clipboardEmpty:
-      return "Copy a location link from Apple Maps or Google Maps first, then try again."
+      return "Kopieer eerst een locatielink vanuit Apple Maps of Google Maps en probeer het opnieuw."
     case .unrecognizedLink:
-      return "That doesn't look like an Apple Maps or Google Maps link."
+      return "Dat lijkt geen link van Apple Maps of Google Maps te zijn."
     case .networkFailure:
-      return "Couldn't open that link. Check your connection and try again."
+      return "Kon die link niet openen. Controleer je verbinding en probeer het opnieuw."
     case .noCoordinatesFound:
-      return "Couldn't find a location in that link."
+      return "Kon geen locatie vinden in die link."
     case .noPendingShare:
-      return "Couldn't find a shared location. Try sharing it again."
+      return "Kon geen gedeelde locatie vinden. Probeer opnieuw te delen."
     }
   }
 }

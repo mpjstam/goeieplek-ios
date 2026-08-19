@@ -38,7 +38,7 @@ enum AppleMapsLinkImport {
       return PlaceSearchResult(
         id: best.id,
         name: best.name,
-        subtitle: "From Apple Maps",
+        subtitle: "Vanuit Apple Maps",
         latitude: best.latitude,
         longitude: best.longitude
       )
@@ -50,7 +50,7 @@ enum AppleMapsLinkImport {
   private static func result(name: String?, coordinate: CLLocationCoordinate2D) -> PlaceSearchResult {
     PlaceSearchResult(
       id: "apple-maps-\(coordinate.latitude)-\(coordinate.longitude)",
-      name: name ?? "Shared Location",
+      name: name ?? "Gedeelde locatie",
       subtitle: "From Apple Maps",
       latitude: coordinate.latitude,
       longitude: coordinate.longitude

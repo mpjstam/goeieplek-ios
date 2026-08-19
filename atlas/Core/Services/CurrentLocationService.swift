@@ -9,9 +9,9 @@ enum LocationError: LocalizedError {
   var errorDescription: String? {
     switch self {
     case .permissionDenied:
-      return "Location access is off for Goeieplek. Turn it on in Settings to use your current location."
+      return "Locatietoegang staat uit voor Goeieplek. Zet dit aan in Instellingen om je huidige locatie te gebruiken."
     case .unavailable:
-      return "Couldn't determine your location. Try again in a moment."
+      return "Kon je locatie niet bepalen. Probeer het over een moment opnieuw."
     }
   }
 }
@@ -33,11 +33,11 @@ final class CurrentLocationService: NSObject, CLLocationManagerDelegate {
   func currentPlace() async throws -> PlaceSearchResult {
     try await requestAuthorizationIfNeeded()
     let location = try await requestLocation()
-    let name = await reverseGeocodedName(for: location) ?? "Current Location"
+    let name = await reverseGeocodedName(for: location) ?? "Huidige locatie"
     return PlaceSearchResult(
       id: "current-location-\(location.coordinate.latitude)-\(location.coordinate.longitude)",
       name: name,
-      subtitle: "Current location",
+      subtitle: "Huidige locatie",
       latitude: location.coordinate.latitude,
       longitude: location.coordinate.longitude
     )

@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 import UniformTypeIdentifiers
 import OSLog
+import UIKit
 
 /// Screen 02 — Library. The home tab: your collections.
 ///
@@ -15,6 +16,7 @@ struct LibraryView: View {
   @State private var newCollectionName = ""
   @State private var showingNewCollection = false
   @State private var showingCategories = false
+  @State private var showingHelp = false
   @State private var navigationPath: [NavigationDestination] = []
   @State private var collectionPendingDeletion: Collection?
   @State private var showingImporter = false
@@ -47,19 +49,22 @@ struct LibraryView: View {
       .sheet(isPresented: $showingCategories) {
         CategoriesView(repository: CategoriesRepository(modelContext: modelContext))
       }
+      .sheet(isPresented: $showingHelp) {
+        HelpView()
+      }
       .sheet(isPresented: $showingNewCollection) { newCollectionSheet }
       .confirmationDialog(
         deletionMessage,
         isPresented: deletionBinding,
         titleVisibility: .visible
       ) {
-        Button("Delete", role: .destructive) {
+        Button("Verwijder", role: .destructive) {
           if let collection = collectionPendingDeletion {
             viewModel?.deleteCollection(collection)
           }
           collectionPendingDeletion = nil
         }
-        Button("Cancel", role: .cancel) {
+        Button("Annuleer", role: .cancel) {
           collectionPendingDeletion = nil
         }
       }
@@ -69,10 +74,10 @@ struct LibraryView: View {
           importFile(from: url)
         case .failure(let error):
           AtlasLog.library.error("Import picker failed: \(error.localizedDescription, privacy: .public)")
-          importErrorMessage = "Couldn't open that file."
+          importErrorMessage = "Kon dit bestand niet openen."
         }
       }
-      .alert("Import Failed", isPresented: importErrorBinding) {
+      .alert("Importeren mislukt", isPresented: importErrorBinding) {
         Button("OK", role: .cancel) { importErrorMessage = nil }
       } message: {
         Text(importErrorMessage ?? "")
@@ -81,6 +86,12 @@ struct LibraryView: View {
     .onAppear {
       if viewModel == nil {
         viewModel = CollectionsViewModel(modelContext: modelContext)
+      } else {
+        // Re-fetch on every appearance, not just the first — a collection
+        // created elsewhere (e.g. Search tab's "New Collection" flow) won't
+        // otherwise show up here until the app restarts, since `collections`
+        // is a plain snapshot rather than a live query.
+        viewModel?.loadCollections()
       }
     }
   }
@@ -91,42 +102,45 @@ struct LibraryView: View {
     VStack(alignment: .leading, spacing: 10) {
       HStack(spacing: 20) {
         Spacer()
+        Button { showingHelp = true } label: {
+          Image(systemName: "questionmark.circle")
+            .font(.title3)
+        }
+        .accessibilityLabel("Help")
+
         Button { showingCategories = true } label: {
           Image(systemName: "tag")
             .font(.title3)
         }
-        .accessibilityLabel("Manage categories")
+        .accessibilityLabel("Categorieën beheren")
 
         Menu {
           Button {
             showingNewCollection = true
           } label: {
-            Label("New Collection", systemImage: "plus")
+            Label("Nieuwe collectie", systemImage: "plus")
           }
           Button {
             showingImporter = true
           } label: {
-            Label("Import…", systemImage: "square.and.arrow.down")
+            Label("Importeer…", systemImage: "square.and.arrow.down")
           }
           ShareLink(
-            "Back Up All Collections…",
+            "Back-up van alle collecties…",
             item: SharedLibrary(viewModel?.collections ?? []),
-            preview: SharePreview("Goeieplek Backup")
+            preview: SharePreview("Goeieplek back-up")
           )
           .disabled(viewModel?.collections.isEmpty ?? true)
         } label: {
           Image(systemName: "plus")
             .font(.title3)
         }
-        .accessibilityLabel("Add collection")
+        .accessibilityLabel("Collectie toevoegen")
       }
       .foregroundStyle(AtlasColor.text)
 
       HStack(spacing: 10) {
-        // The zoomed rainbow-arc crop used on the actual App Icon — deliberately
-        // not `AtlasMark` (the full arc-and-pin drawing used on the splash screen).
-        Image("AppIconCrop")
-          .resizable()
+        AtlasMark(style: .icon)
           .frame(width: 28, height: 28)
           .accessibilityHidden(true)
         Text("Goeieplek")
@@ -177,9 +191,9 @@ struct LibraryView: View {
           Button(role: .destructive) {
             collectionPendingDeletion = collection
           } label: {
-            Label("Delete", systemImage: "trash")
+            Label("Verwijder", systemImage: "trash")
           }
-          .accessibilityLabel("Delete \(collection.name)")
+          .accessibilityLabel("Verwijder \(collection.name)")
         }
       }
     }
@@ -190,20 +204,31 @@ struct LibraryView: View {
 
   private func collectionRow(_ collection: Collection) -> some View {
     VStack(alignment: .leading, spacing: 0) {
-      VStack(alignment: .leading, spacing: 6) {
-        Text(collection.name)
-          .font(AtlasFont.collectionRow)
-          .foregroundStyle(AtlasColor.text)
-
-        if !collection.notes.isEmpty {
-          Text(collection.notes)
-            .font(AtlasFont.body)
-            .foregroundStyle(AtlasColor.textSecondary)
-            .multilineTextAlignment(.leading)
+      HStack(alignment: .top, spacing: AtlasSpacing.m) {
+        if let image = coverImage(for: collection) {
+          Image(uiImage: image)
+            .resizable()
+            .scaledToFill()
+            .frame(width: AtlasSpacing.thumbnail, height: AtlasSpacing.thumbnail)
+            .clipped()
+            .accessibilityHidden(true)
         }
 
-        AtlasTag(text: placeCount(collection.places.count), style: .outline)
-          .padding(.top, 2)
+        VStack(alignment: .leading, spacing: 6) {
+          Text(collection.name)
+            .font(AtlasFont.collectionRow)
+            .foregroundStyle(AtlasColor.text)
+
+          if !collection.notes.isEmpty {
+            Text(collection.notes)
+              .font(AtlasFont.body)
+              .foregroundStyle(AtlasColor.textSecondary)
+              .multilineTextAlignment(.leading)
+          }
+
+          AtlasTag(text: placeCount(collection.places.count), style: .outline)
+            .padding(.top, 2)
+        }
       }
       .frame(maxWidth: .infinity, alignment: .leading)
       .padding(.horizontal, AtlasSpacing.screenHorizontal)
@@ -212,6 +237,18 @@ struct LibraryView: View {
       AtlasDivider()
     }
     .contentShape(Rectangle())
+  }
+
+  /// The first photo belonging to any place in the collection — places are
+  /// checked in their stored order, and each place's own photos in display order
+  /// (`sortedPhotos`), so this is stable rather than picking a random cover shot.
+  private func coverImage(for collection: Collection) -> UIImage? {
+    for place in collection.places {
+      if let data = place.sortedPhotos.first?.data, let image = UIImage(data: data) {
+        return image
+      }
+    }
+    return nil
   }
 
   // MARK: - Deletion
@@ -227,16 +264,16 @@ struct LibraryView: View {
     guard let collection = collectionPendingDeletion else { return "" }
     let count = collection.places.count
     if count == 0 {
-      return "Delete “\(collection.name)”?"
+      return "“\(collection.name)” verwijderen?"
     }
-    let placeWord = count == 1 ? "place" : "places"
-    return "Delete “\(collection.name)” and its \(count) \(placeWord)? This can't be undone."
+    let placeWord = count == 1 ? "plek" : "plekken"
+    return "“\(collection.name)” en de \(count) \(placeWord) erin verwijderen? Dit kan niet ongedaan gemaakt worden."
   }
 
   /// `AtlasTag` takes a plain `String`, so the `^[…](inflect:)` markup would render
   /// literally — the pluralisation is done here instead.
   private func placeCount(_ count: Int) -> String {
-    count == 1 ? "1 place" : "\(count) places"
+    count == 1 ? "1 plek" : "\(count) plekken"
   }
 
   private var emptyState: some View {
@@ -244,10 +281,10 @@ struct LibraryView: View {
       Image(systemName: "mappin.circle")
         .font(.system(size: 44))
         .foregroundStyle(AtlasColor.neutral400)
-      Text("No collections yet")
+      Text("Nog geen collecties")
         .font(AtlasFont.rowTitle)
         .foregroundStyle(AtlasColor.text)
-      Text("Create one to start collecting places")
+      Text("Maak er een aan om plekken te verzamelen")
         .font(AtlasFont.body)
         .foregroundStyle(AtlasColor.textSecondary)
     }
@@ -291,19 +328,19 @@ struct LibraryView: View {
   private var newCollectionSheet: some View {
     NavigationStack {
       Form {
-        TextField("Collection name", text: $newCollectionName)
+        TextField("Naam van de collectie", text: $newCollectionName)
       }
-      .navigationTitle("New Collection")
+      .navigationTitle("Nieuwe collectie")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") {
+          Button("Annuleer") {
             showingNewCollection = false
             newCollectionName = ""
           }
         }
         ToolbarItem(placement: .confirmationAction) {
-          Button("Create") {
+          Button("Maak aan") {
             let trimmed = newCollectionName.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmed.isEmpty else { return }
             viewModel?.createCollection(name: trimmed)

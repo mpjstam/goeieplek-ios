@@ -33,7 +33,7 @@ struct PlacePhotoPicker: View {
               addTile
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Add a photo")
+            .accessibilityLabel("Voeg een foto toe")
           }
         }
       }
@@ -54,7 +54,7 @@ struct PlacePhotoPicker: View {
   }
 
   private var label: String {
-    photoDatas.isEmpty ? "Photo" : "Photos (\(photoDatas.count)/\(Photo.maxPerPlace))"
+    photoDatas.isEmpty ? "Foto" : "Foto's (\(photoDatas.count)/\(Photo.maxPerPlace))"
   }
 
   private func thumbnail(_ data: Data, index: Int) -> some View {
@@ -77,7 +77,7 @@ struct PlacePhotoPicker: View {
           .foregroundStyle(.white, .black.opacity(0.6))
           .padding(6)
       }
-      .accessibilityLabel("Remove photo \(index + 1)")
+      .accessibilityLabel("Verwijder foto \(index + 1)")
     }
     .overlay(Rectangle().strokeBorder(AtlasColor.divider, lineWidth: 1))
   }
@@ -87,7 +87,7 @@ struct PlacePhotoPicker: View {
       AtlasColor.surface
       VStack(spacing: 4) {
         Image(systemName: "plus")
-        Text("Add").font(AtlasFont.caption)
+        Text("Voeg toe").font(AtlasFont.caption)
       }
       .foregroundStyle(AtlasColor.textSecondary)
     }

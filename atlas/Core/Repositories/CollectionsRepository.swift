@@ -33,7 +33,7 @@ class CollectionsRepository {
     try modelContext.save()
   }
 
-  func addPlace(to collection: Collection, name: String, notes: String, latitude: Double, longitude: Double, category: String = "other", photoDatas: [Data] = []) throws -> Place {
+  func addPlace(to collection: Collection, name: String, notes: String, latitude: Double, longitude: Double, category: String = "overig", photoDatas: [Data] = []) throws -> Place {
     let place = Place(name: name, notes: notes, latitude: latitude, longitude: longitude, category: category)
     place.collection = collection
     collection.places.append(place)

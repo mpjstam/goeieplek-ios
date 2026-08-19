@@ -30,26 +30,26 @@ struct CollectionDetailView: View {
     .toolbar {
       ToolbarItemGroup(placement: .primaryAction) {
         Menu {
-          ShareLink("Share as Text", item: shareText)
+          ShareLink("Deel als tekst", item: shareText)
           ShareLink(
-            "Share as Goeieplek File",
+            "Deel als Goeieplek-bestand",
             item: SharedCollection(collection),
             preview: SharePreview(collection.name)
           )
         } label: {
           Image(systemName: "square.and.arrow.up")
         }
-        .accessibilityLabel("Share collection")
+        .accessibilityLabel("Deel collectie")
 
         Button { showingEdit = true } label: {
           Image(systemName: "pencil")
         }
-        .accessibilityLabel("Rename collection")
+        .accessibilityLabel("Collectie hernoemen")
 
         Button { showingSearch = true } label: {
           Image(systemName: "plus")
         }
-        .accessibilityLabel("Add place")
+        .accessibilityLabel("Plek toevoegen")
       }
     }
     .tint(AtlasColor.accent)
@@ -144,10 +144,10 @@ struct CollectionDetailView: View {
       Image(systemName: "mappin")
         .font(.system(size: 40))
         .foregroundStyle(AtlasColor.neutral400)
-      Text("No places yet")
+      Text("Nog geen plekken")
         .font(AtlasFont.rowTitle)
         .foregroundStyle(AtlasColor.text)
-      Text("Search or add your first place to this collection")
+      Text("Zoek of voeg je eerste plek aan deze collectie toe")
         .font(AtlasFont.body)
         .foregroundStyle(AtlasColor.textSecondary)
         .multilineTextAlignment(.center)
@@ -181,15 +181,15 @@ struct CollectionDetailView: View {
         AtlasDivider()
         ScrollView {
           VStack(alignment: .leading, spacing: 22) {
-            AtlasFormField(label: "Name") {
-              TextField("Collection name", text: $editName)
+            AtlasFormField(label: "Naam") {
+              TextField("Naam van de collectie", text: $editName)
                 .font(AtlasFont.bodyLarge)
                 .atlasInputBackground()
             }
 
-            AtlasFormField(label: "Notes") {
+            AtlasFormField(label: "Notities") {
               TextField(
-                "What ties these places together?",
+                "Wat verbindt deze plekken?",
                 text: $editNotes,
                 axis: .vertical
               )
@@ -202,14 +202,14 @@ struct CollectionDetailView: View {
         }
       }
       .background(AtlasColor.background)
-      .navigationTitle("Edit Collection")
+      .navigationTitle("Collectie bewerken")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") { showingEdit = false }
+          Button("Annuleer") { showingEdit = false }
         }
         ToolbarItem(placement: .confirmationAction) {
-          Button("Save", action: saveEdits)
+          Button("Bewaar", action: saveEdits)
             .disabled(editName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
       }
@@ -239,7 +239,7 @@ struct CollectionDetailView: View {
     }
 
     if collection.places.isEmpty {
-      lines.append("\nNo places yet.")
+      lines.append("\nNog geen plekken.")
     } else {
       for place in collection.places {
         lines.append("")
@@ -252,7 +252,7 @@ struct CollectionDetailView: View {
       }
     }
 
-    lines.append("\nShared from Goeieplek")
+    lines.append("\nGedeeld vanuit Goeieplek")
     return lines.joined(separator: "\n")
   }
 }

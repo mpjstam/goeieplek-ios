@@ -83,7 +83,7 @@ final class Place: Hashable {
     notes: String = "",
     latitude: Double,
     longitude: Double,
-    category: String = "other",
+    category: String = "overig",
     createdAt: Date = .now,
     updatedAt: Date = .now
   ) {
