@@ -4,11 +4,11 @@ import MapKit
 
 @Model
 final class Collection: Hashable {
-  @Attribute(.unique) var id: String
-  var name: String
-  var notes: String
-  var createdAt: Date
-  var updatedAt: Date
+  var id: String = UUID().uuidString
+  var name: String = ""
+  var notes: String = ""
+  var createdAt: Date = Date.now
+  var updatedAt: Date = Date.now
 
   @Relationship(deleteRule: .cascade, inverse: \Place.collection) var places: [Place] = []
 
@@ -37,10 +37,10 @@ final class Collection: Hashable {
 
 @Model
 final class Category: Hashable {
-  @Attribute(.unique) var id: String
-  var name: String
-  var sortOrder: Int
-  var createdAt: Date
+  var id: String = UUID().uuidString
+  var name: String = ""
+  var sortOrder: Int = 0
+  var createdAt: Date = Date.now
 
   init(
     id: String = UUID().uuidString,
@@ -65,14 +65,14 @@ final class Category: Hashable {
 
 @Model
 final class Place: Hashable {
-  @Attribute(.unique) var id: String
-  var name: String
-  var notes: String
-  var latitude: Double
-  var longitude: Double
-  var category: String
-  var createdAt: Date
-  var updatedAt: Date
+  var id: String = UUID().uuidString
+  var name: String = ""
+  var notes: String = ""
+  var latitude: Double = 0
+  var longitude: Double = 0
+  var category: String = "overig"
+  var createdAt: Date = Date.now
+  var updatedAt: Date = Date.now
 
   @Relationship(deleteRule: .cascade, inverse: \Photo.place) var photos: [Photo] = []
   var collection: Collection?
@@ -121,9 +121,9 @@ final class Photo: Hashable {
   /// the repository), not by SwiftData itself.
   static let maxPerPlace = 5
 
-  @Attribute(.unique) var id: String
-  @Attribute(.externalStorage) var data: Data
-  var sortOrder: Int
+  var id: String = UUID().uuidString
+  @Attribute(.externalStorage) var data: Data = Data()
+  var sortOrder: Int = 0
   var place: Place?
 
   init(id: String = UUID().uuidString, data: Data, sortOrder: Int = 0) {
