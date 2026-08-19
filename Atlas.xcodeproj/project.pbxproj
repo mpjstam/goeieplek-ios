@@ -36,10 +36,18 @@
 
 /* Begin PBXFileReference section */
 		7F137EDE301A982B00EA4E5A /* Atlas.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Atlas.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		7F69F5BA303642D800386508 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; name = Info.plist; path = Atlas/Info.plist; sourceTree = "<group>"; };
 		7F74034B30226EEC00319DDC /* AtlasShare.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = AtlasShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		7F69F5BC303642D800386510 /* Exceptions for "atlas" folder in "Atlas" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 7F137EDD301A982B00EA4E5A /* Atlas */;
+		};
 		7F74035630226EEC00319DDC /* Exceptions for "AtlasShare" folder in "AtlasShare" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -52,6 +60,9 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		7F137EE0301A982B00EA4E5A /* atlas */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				7F69F5BC303642D800386510 /* Exceptions for "atlas" folder in "Atlas" target */,
+			);
 			path = atlas;
 			sourceTree = "<group>";
 		};
@@ -86,6 +97,7 @@
 		7F137ED5301A982B00EA4E5A = {
 			isa = PBXGroup;
 			children = (
+				7F69F5BA303642D800386508 /* Info.plist */,
 				7F137EE0301A982B00EA4E5A /* atlas */,
 				7F74034C30226EEC00319DDC /* AtlasShare */,
 				7F137EDF301A982B00EA4E5A /* Products */,
@@ -360,6 +372,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Atlas/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Goeieplek;
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Atlas uses your location so you can quickly save the place you are currently at.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
@@ -407,6 +420,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Atlas/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Goeieplek;
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Atlas uses your location so you can quickly save the place you are currently at.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
