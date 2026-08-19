@@ -17,7 +17,7 @@ struct AtlasApp: App {
     AtlasAppearance.apply()
 
     let schema = Schema([Collection.self, Place.self, Photo.self, Category.self])
-    let config = ModelConfiguration("Atlas", schema: schema)
+    let config = ModelConfiguration("Atlas", schema: schema, cloudKitDatabase: .none)
     do {
       modelContainer = try ModelContainer(for: schema, configurations: config)
     } catch {
