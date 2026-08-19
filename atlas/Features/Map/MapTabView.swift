@@ -76,7 +76,7 @@ struct MapTabView: View {
     Map(position: $position, selection: $selectedPlaceID) {
       ForEach(viewModel.visiblePlaces) { place in
         Marker(place.name, coordinate: place.coordinate)
-          .tint(AtlasColor.accent)
+          .tint(AtlasColor.categoryTagColors(for: place.category).foreground)
           .tag(place.id)
       }
     }

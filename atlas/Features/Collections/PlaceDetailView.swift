@@ -15,6 +15,7 @@ struct PlaceDetailView: View {
   @Query(sort: \Category.sortOrder) private var categories: [Category]
   @Query(sort: \Collection.createdAt, order: .reverse) private var collections: [Collection]
   @Environment(\.dismiss) private var dismiss
+  @Environment(\.openURL) private var openURL
   @Environment(MapFocusRequest.self) private var mapFocus
 
   @State private var position: MapCameraPosition = .automatic
@@ -52,6 +53,18 @@ struct PlaceDetailView: View {
           Image(systemName: "pencil")
         }
         .accessibilityLabel("Plek bewerken")
+
+        Menu {
+          Button("Route in Apple Maps") {
+            openURL(MapsDirectionsLink.appleMaps(to: place.coordinate, name: place.name))
+          }
+          Button("Route in Google Maps") {
+            openURL(MapsDirectionsLink.googleMaps(to: place.coordinate))
+          }
+        } label: {
+          Image(systemName: "arrow.triangle.turn.up.right.circle")
+        }
+        .accessibilityLabel("Route naar \(place.name)")
 
         Menu {
           ForEach(otherCollections) { collection in
@@ -180,6 +193,7 @@ struct PlaceDetailView: View {
     ZStack {
       Map(position: $position, interactionModes: []) {
         Marker(place.name, coordinate: place.coordinate)
+          .tint(AtlasColor.categoryTagColors(for: place.category).foreground)
       }
       .mapStyle(.standard)
       .allowsHitTesting(false)
