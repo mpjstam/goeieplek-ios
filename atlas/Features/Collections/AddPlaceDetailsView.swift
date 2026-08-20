@@ -65,7 +65,7 @@ struct AddPlaceDetailsView: View {
       }
       .onAppear {
         if category.isEmpty {
-          category = categories.first?.name ?? "Overig"
+          category = categories.first?.name ?? "overig"
         }
       }
     }

@@ -12,8 +12,9 @@ enum MapsShareInbox {
   private static let pendingDirectoryName = "PendingMapsShares"
 
   /// Returns and clears every pending share, oldest first — the filename's
-  /// timestamp prefix (see `ShareViewController.persist(_:)`) is what makes
-  /// that ordering recoverable without a separate index file. An empty array
+  /// zero-padded sequence-number prefix (see `ShareViewController.persist(_:)`)
+  /// is what makes that ordering recoverable without a separate index file.
+  /// An empty array
   /// covers "nothing was shared," "the directory doesn't exist yet," and "the
   /// App Group container isn't reachable" alike — either way there's nothing
   /// for the caller to act on.
@@ -31,10 +32,12 @@ enum MapsShareInbox {
     return fileURLs
       .sorted { $0.lastPathComponent < $1.lastPathComponent }
       .compactMap { fileURL in
-        defer { try? FileManager.default.removeItem(at: fileURL) }
         guard let value = try? String(contentsOf: fileURL, encoding: .utf8), !value.isEmpty else {
+          // Leave the file in place on a failed/empty read so the next poll
+          // retries it, instead of deleting a share we never actually read.
           return nil
         }
+        try? FileManager.default.removeItem(at: fileURL)
         return value
       }
   }

@@ -116,8 +116,11 @@ final class ShareViewController: UIViewController {
   /// Writes each share as its own file in a shared-container subdirectory,
   /// rather than one fixed file — sharing several locations in a row (before
   /// ever opening Atlas) must queue them all, not have each one silently
-  /// overwrite the last. The timestamp-prefixed filename keeps `MapsShareInbox`
-  /// able to recover share order without any extra bookkeeping file.
+  /// overwrite the last. The sequence-numbered filename keeps `MapsShareInbox`
+  /// able to recover share order without any extra bookkeeping file, and
+  /// without depending on the wall clock — `Date()` isn't guaranteed
+  /// monotonic (NTP corrections, manual time changes) and two shares made in
+  /// close succession could otherwise get the same timestamp.
   ///
   /// Writes directly to disk rather than going through `UserDefaults`/`CFPreferences`
   /// — `FileManager.write(to:atomically:)` is a plain, synchronous disk write with no
@@ -130,7 +133,7 @@ final class ShareViewController: UIViewController {
       return .containerUnavailable
     }
     let directoryURL = containerURL.appendingPathComponent(pendingDirectoryName, isDirectory: true)
-    let fileName = "\(Date().timeIntervalSince1970)-\(UUID().uuidString).txt"
+    let fileName = "\(String(format: "%020d", nextSequenceNumber()))-\(UUID().uuidString).txt"
     let fileURL = directoryURL.appendingPathComponent(fileName)
     print("[AtlasShare] container found, writing to: \(fileURL.path)")
     do {
@@ -142,6 +145,17 @@ final class ShareViewController: UIViewController {
       print("[AtlasShare] write threw: \(error)")
       return .writeFailed
     }
+  }
+
+  /// A monotonically increasing counter, shared with the App Group, used to
+  /// order queued shares — immune to wall-clock adjustments in a way
+  /// `Date()` isn't. Zero-padded so `MapsShareInbox`'s plain lexicographic
+  /// filename sort matches numeric order.
+  private func nextSequenceNumber() -> Int {
+    let defaults = UserDefaults(suiteName: appGroupID)
+    let next = (defaults?.integer(forKey: "nextMapsShareSequence") ?? 0) + 1
+    defaults?.set(next, forKey: "nextMapsShareSequence")
+    return next
   }
 
   /// Checks every plausible source of the shared text rather than assuming it's a

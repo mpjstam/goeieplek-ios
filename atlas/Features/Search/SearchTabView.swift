@@ -254,10 +254,10 @@ struct SearchTabView: View {
   }
 
   private func createCollectionAndBegin(_ result: PlaceSearchResult) {
-    let trimmed = newCollectionName.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !trimmed.isEmpty else { return }
     do {
-      let collection = try CollectionsRepository(modelContext: modelContext).createCollection(name: trimmed)
+      guard let collection = try CollectionsRepository(modelContext: modelContext).createCollection(named: newCollectionName) else {
+        return
+      }
       collections.append(collection)
       newCollectionTarget = nil
       newCollectionName = ""

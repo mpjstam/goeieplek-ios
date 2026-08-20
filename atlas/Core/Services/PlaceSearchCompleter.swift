@@ -98,6 +98,10 @@ extension PlaceSearchCompleter: MKLocalSearchCompleterDelegate {
 
   func completer(_ completer: MKLocalSearchCompleter, didFailWithError error: Error) {
     AtlasLog.search.error("Search completer failed: \(error.localizedDescription, privacy: .public)")
-    suggestions = []
+    // Deliberately leaves `suggestions` as-is: a transient failure (a network
+    // hiccup mid-search-as-you-type, common on real devices) isn't "there are
+    // no results" and shouldn't be rendered as the same empty state — the
+    // next successful `completerDidUpdateResults` call replaces this list
+    // once the completer recovers, which it does on its own as typing continues.
   }
 }

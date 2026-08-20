@@ -1,6 +1,7 @@
 import Foundation
 import SwiftData
 import Observation
+import UIKit
 
 @Observable
 class CollectionsViewModel {
@@ -9,6 +10,7 @@ class CollectionsViewModel {
   var error: String?
 
   private let repository: CollectionsRepository
+  private var coverImageCache: [String: UIImage] = [:]
 
   init(modelContext: ModelContext) {
     self.repository = CollectionsRepository(modelContext: modelContext)
@@ -24,6 +26,28 @@ class CollectionsViewModel {
       self.error = error.localizedDescription
     }
     isLoading = false
+    // Cleared rather than kept across reloads: a cached cover could otherwise
+    // go stale if a collection's photos changed since it was last decoded.
+    coverImageCache.removeAll()
+  }
+
+  /// The first photo belonging to any place in the collection — places are
+  /// checked in their stored order, and each place's own photos in display
+  /// order (`sortedPhotos`), so this is stable rather than picking a random
+  /// cover shot. Cached per collection for the lifetime of the current
+  /// `collections` list, since decoding a full photo from raw `Data` isn't
+  /// cheap to repeat on every row re-render.
+  func coverImage(for collection: Collection) -> UIImage? {
+    if let cached = coverImageCache[collection.id] {
+      return cached
+    }
+    for place in collection.places {
+      if let data = place.sortedPhotos.first?.data, let image = UIImage(data: data) {
+        coverImageCache[collection.id] = image
+        return image
+      }
+    }
+    return nil
   }
 
   func createCollection(name: String, notes: String = "") {

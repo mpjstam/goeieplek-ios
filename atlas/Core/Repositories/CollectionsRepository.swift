@@ -21,6 +21,14 @@ class CollectionsRepository {
     return collection
   }
 
+  /// Trims `rawName` and validates it before creating — `nil` means "nothing
+  /// to create" (a blank/whitespace-only name), not an error.
+  func createCollection(named rawName: String, notes: String = "") throws -> Collection? {
+    let trimmed = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmed.isEmpty else { return nil }
+    return try createCollection(name: trimmed, notes: notes)
+  }
+
   func updateCollection(_ collection: Collection, name: String, notes: String) throws {
     collection.name = name
     collection.notes = notes

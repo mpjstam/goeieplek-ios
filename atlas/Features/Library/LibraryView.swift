@@ -205,7 +205,7 @@ struct LibraryView: View {
   private func collectionRow(_ collection: Collection) -> some View {
     VStack(alignment: .leading, spacing: 0) {
       HStack(alignment: .top, spacing: AtlasSpacing.m) {
-        if let image = coverImage(for: collection) {
+        if let image = viewModel?.coverImage(for: collection) {
           Image(uiImage: image)
             .resizable()
             .scaledToFill()
@@ -237,18 +237,6 @@ struct LibraryView: View {
       AtlasDivider()
     }
     .contentShape(Rectangle())
-  }
-
-  /// The first photo belonging to any place in the collection — places are
-  /// checked in their stored order, and each place's own photos in display order
-  /// (`sortedPhotos`), so this is stable rather than picking a random cover shot.
-  private func coverImage(for collection: Collection) -> UIImage? {
-    for place in collection.places {
-      if let data = place.sortedPhotos.first?.data, let image = UIImage(data: data) {
-        return image
-      }
-    }
-    return nil
   }
 
   // MARK: - Deletion

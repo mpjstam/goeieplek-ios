@@ -29,12 +29,45 @@ class CategoriesRepository {
   }
 
   func seedDefaultsIfNeeded() throws {
-    guard try fetchCategories().isEmpty else { return }
-    let defaults = ["restaurant", "hotel", "uitzicht", "activiteit", "parkeren", "overig"]
-    for (index, name) in defaults.enumerated() {
-      modelContext.insert(Category(name: name, sortOrder: index))
+    let existing = try fetchCategories()
+    guard !existing.isEmpty else {
+      let defaults = ["restaurant", "hotel", "uitzicht", "activiteit", "parkeren", "overig"]
+      for (index, name) in defaults.enumerated() {
+        modelContext.insert(Category(name: name, sortOrder: index))
+      }
+      try modelContext.save()
+      return
     }
-    try modelContext.save()
+    try migrateLegacyEnglishNames(in: existing)
+  }
+
+  /// One-time rename for installs seeded before the app's UI went fully Dutch —
+  /// without this, an upgrading tester keeps English category names forever,
+  /// since `seedDefaultsIfNeeded()` only runs against an empty table.
+  private static let legacyEnglishNames = [
+    "viewpoint": "uitzicht",
+    "activity": "activiteit",
+    "parking": "parkeren",
+    "other": "overig",
+  ]
+
+  private func migrateLegacyEnglishNames(in categories: [Category]) throws {
+    var didChange = false
+    for category in categories {
+      guard let newName = Self.legacyEnglishNames[category.name.lowercased()] else { continue }
+      let oldName = category.name
+      category.name = newName
+      let affectedPlaces = try modelContext.fetch(
+        FetchDescriptor<Place>(predicate: #Predicate { $0.category == oldName })
+      )
+      for place in affectedPlaces {
+        place.category = newName
+      }
+      didChange = true
+    }
+    if didChange {
+      try modelContext.save()
+    }
   }
 
   @discardableResult
