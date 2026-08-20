@@ -45,7 +45,11 @@ final class CurrentLocationService: NSObject, CLLocationManagerDelegate {
 
   // MARK: - Authorization
 
-  private func requestAuthorizationIfNeeded() async throws {
+  /// Not private: `SearchTabView` calls this on appear, ahead of "Gebruik
+  /// huidige locatie" ever being tapped — search-as-you-type results can
+  /// otherwise come back empty on a real device while authorization is still
+  /// `.notDetermined`, even with an explicit search region set.
+  func requestAuthorizationIfNeeded() async throws {
     switch manager.authorizationStatus {
     case .authorizedWhenInUse, .authorizedAlways:
       return

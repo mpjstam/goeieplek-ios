@@ -14,6 +14,7 @@ struct SearchTabView: View {
 
   @State private var searchText = ""
   @State private var searchCompleter = PlaceSearchCompleter()
+  @State private var completerQueryTask: Task<Void, Never>?
   /// A single already-resolved result pinned above the suggestion list — used
   /// only by `presentSingleResult`'s no-collections fallback, since a
   /// suggestion from `searchCompleter` can't represent an already-resolved
@@ -91,6 +92,11 @@ struct SearchTabView: View {
     .onAppear {
       loadCollections()
       resolvePendingShare()
+      // Requested here rather than waiting for "Gebruik huidige locatie" —
+      // on a real device, MKLocalSearchCompleter can return empty results
+      // while location authorization is still .notDetermined, even with an
+      // explicit search region set.
+      Task { try? await locationService.requestAuthorizationIfNeeded() }
     }
     .onChange(of: searchText) { _, query in updateCompleterQuery(query) }
     .onChange(of: pendingShare.urlStrings) { _, _ in resolvePendingShare() }
@@ -524,16 +530,26 @@ struct SearchTabView: View {
     }
   }
 
-  /// `MKLocalSearchCompleter` does its own internal debouncing/coalescing, so
-  /// unlike the old `MKLocalSearch`-per-keystroke approach this needs no
-  /// manual `Task.sleep` debounce of its own.
+  /// A small explicit debounce before committing to `queryFragment`, on top of
+  /// whatever coalescing `MKLocalSearchCompleter` does internally — on a real
+  /// device, typing fast enough (a physical keyboard, unlike synthetic test
+  /// input) can fire a new `queryFragment` before the in-flight request for
+  /// the previous one has resolved, and the completer doesn't guarantee the
+  /// resulting `completerDidUpdateResults` calls land in order. Waiting for a
+  /// short pause in typing means each committed query gets a real chance to
+  /// finish before being superseded, instead of racing.
   private func updateCompleterQuery(_ query: String) {
     selectedID = nil
     pinnedResult = nil
+    completerQueryTask?.cancel()
     let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
-    if trimmed.isEmpty {
+    guard !trimmed.isEmpty else {
       searchCompleter.clear()
-    } else {
+      return
+    }
+    completerQueryTask = Task {
+      try? await Task.sleep(for: .milliseconds(200))
+      guard !Task.isCancelled else { return }
       searchCompleter.queryFragment = trimmed
     }
   }
