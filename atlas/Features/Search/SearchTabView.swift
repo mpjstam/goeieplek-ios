@@ -13,12 +13,13 @@ struct SearchTabView: View {
   @FocusState private var isSearchFieldFocused: Bool
 
   @State private var searchText = ""
-  @State private var searchCompleter = PlaceSearchCompleter()
-  @State private var completerQueryTask: Task<Void, Never>?
-  /// A single already-resolved result pinned above the suggestion list — used
-  /// only by `presentSingleResult`'s no-collections fallback, since a
-  /// suggestion from `searchCompleter` can't represent an already-resolved
-  /// current-location/pasted-link result.
+  @State private var results: [PlaceSearchResult] = []
+  @State private var searchTask: Task<Void, Never>?
+  private let searchService = PlaceSearchService()
+  /// A single result pinned above the regular results list — used only by
+  /// `presentSingleResult`'s no-collections-yet fallback, so a current-location
+  /// or pasted-link result stays visible (and selectable) even though it isn't
+  /// part of `results`.
   @State private var pinnedResult: PlaceSearchResult?
   @State private var selectedID: String?
   @State private var collections: [Collection] = []
@@ -92,13 +93,9 @@ struct SearchTabView: View {
     .onAppear {
       loadCollections()
       resolvePendingShare()
-      // Requested here rather than waiting for "Gebruik huidige locatie" —
-      // on a real device, MKLocalSearchCompleter can return empty results
-      // while location authorization is still .notDetermined, even with an
-      // explicit search region set.
       Task { try? await locationService.requestAuthorizationIfNeeded() }
     }
-    .onChange(of: searchText) { _, query in updateCompleterQuery(query) }
+    .onChange(of: searchText) { _, query in scheduleSearch(query) }
     .onChange(of: pendingShare.urlStrings) { _, _ in resolvePendingShare() }
     .sheet(item: $pendingAdd) { pending in
       AddPlaceDetailsView(
@@ -275,7 +272,7 @@ struct SearchTabView: View {
 
   @ViewBuilder
   private var content: some View {
-    let isEmpty = pinnedResult == nil && searchCompleter.suggestions.isEmpty
+    let isEmpty = pinnedResult == nil && results.isEmpty
     if isEmpty && !searchText.isEmpty {
       SearchPlaceholder(systemImage: "magnifyingglass", message: "Geen plekken gevonden")
     } else if isEmpty {
@@ -305,14 +302,14 @@ struct SearchTabView: View {
           AtlasDivider()
         }
 
-        ForEach(searchCompleter.suggestions) { suggestion in
+        ForEach(results) { result in
           Button {
             isSearchFieldFocused = false
-            selectedID = suggestion.id
+            selectedID = result.id
           } label: {
-            PlaceResultRow(title: highlightedTitle(suggestion), subtitle: suggestion.subtitle, isSelected: suggestion.id == selectedID) {
-              if suggestion.id == selectedID {
-                addControl(for: suggestion)
+            PlaceResultRow(result: result, isSelected: result.id == selectedID) {
+              if result.id == selectedID {
+                addControl(for: result)
               }
             }
           }
@@ -324,64 +321,21 @@ struct SearchTabView: View {
     .scrollDismissesKeyboard(.immediately)
   }
 
-  /// Bolds the substring(s) of a suggestion's title that matched the typed
-  /// query — the same highlighting Spotlight/Maps show in their own
-  /// suggestion lists, and the main visual payoff of using a completer at all.
-  private func highlightedTitle(_ suggestion: PlaceSearchSuggestion) -> AttributedString {
-    var attributed = AttributedString(suggestion.title)
-    for nsRange in suggestion.titleHighlightRanges {
-      guard let stringRange = Range(nsRange, in: suggestion.title),
-            let attributedRange = Range(stringRange, in: attributed)
-      else { continue }
-      attributed[attributedRange].font = AtlasFont.resultTitle.bold()
-    }
-    return attributed
-  }
-
   @ViewBuilder
-  private func addControl(for suggestion: PlaceSearchSuggestion) -> some View {
+  private func addControl(for result: PlaceSearchResult) -> some View {
     if collections.isEmpty {
-      newCollectionButton { resolveForNewCollection(suggestion) }
+      newCollectionButton { newCollectionTarget = result }
     } else if collections.count == 1, let only = collections.first {
-      addButton { resolveAndAdd(suggestion, into: only) }
+      addButton { begin(result, into: only) }
     } else {
       Menu {
         ForEach(collections) { collection in
-          Button(collection.name) { resolveAndAdd(suggestion, into: collection) }
+          Button(collection.name) { begin(result, into: collection) }
         }
       } label: {
         addLabel
       }
-      .accessibilityLabel("Voeg \(suggestion.title) toe aan een collectie")
-    }
-  }
-
-  /// The suggestion's coordinate is resolved here, on "Add" — the one point in
-  /// this flow that actually needs it, rather than up front for every
-  /// suggestion the completer returns.
-  private func resolveAndAdd(_ suggestion: PlaceSearchSuggestion, into collection: Collection) {
-    Task {
-      do {
-        let result = try await searchCompleter.resolve(suggestion)
-        begin(result, into: collection)
-      } catch {
-        AtlasLog.search.error("Failed to resolve suggestion: \(error.localizedDescription, privacy: .public)")
-        locationErrorMessage = error.localizedDescription
-      }
-    }
-  }
-
-  /// Same resolution step as `resolveAndAdd`, but for the no-collections-yet
-  /// case — opens `newCollectionSheet` with the resolved result once it's in
-  /// hand, instead of adding straight into an (nonexistent) collection.
-  private func resolveForNewCollection(_ suggestion: PlaceSearchSuggestion) {
-    Task {
-      do {
-        newCollectionTarget = try await searchCompleter.resolve(suggestion)
-      } catch {
-        AtlasLog.search.error("Failed to resolve suggestion: \(error.localizedDescription, privacy: .public)")
-        locationErrorMessage = error.localizedDescription
-      }
+      .accessibilityLabel("Voeg \(result.name) toe aan een collectie")
     }
   }
 
@@ -530,27 +484,36 @@ struct SearchTabView: View {
     }
   }
 
-  /// A small explicit debounce before committing to `queryFragment`, on top of
-  /// whatever coalescing `MKLocalSearchCompleter` does internally — on a real
-  /// device, typing fast enough (a physical keyboard, unlike synthetic test
-  /// input) can fire a new `queryFragment` before the in-flight request for
-  /// the previous one has resolved, and the completer doesn't guarantee the
-  /// resulting `completerDidUpdateResults` calls land in order. Waiting for a
-  /// short pause in typing means each committed query gets a real chance to
-  /// finish before being superseded, instead of racing.
-  private func updateCompleterQuery(_ query: String) {
+  /// Debounced so a fast typist does not fire a request per keystroke — mirrors
+  /// `SearchPlacesView.scheduleSearch`. Uses `PlaceSearchService`'s one-shot
+  /// `MKLocalSearch` rather than `MKLocalSearchCompleter`: the completer API
+  /// turned out to be unreliable on real devices (observed failing with
+  /// `MKErrorDomain error 5`, and once it errors it can stop returning results
+  /// at all for the rest of the session, even for queries that work fine
+  /// moments later) — this is the same search mechanism already working
+  /// reliably in the in-collection search sheet.
+  private func scheduleSearch(_ query: String) {
     selectedID = nil
     pinnedResult = nil
-    completerQueryTask?.cancel()
+    searchTask?.cancel()
+
     let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmed.isEmpty else {
-      searchCompleter.clear()
+      results = []
       return
     }
-    completerQueryTask = Task {
-      try? await Task.sleep(for: .milliseconds(200))
+
+    searchTask = Task {
+      try? await Task.sleep(for: .milliseconds(250))
       guard !Task.isCancelled else { return }
-      searchCompleter.queryFragment = trimmed
+      do {
+        let found = try await searchService.search(trimmed)
+        guard !Task.isCancelled else { return }
+        results = found
+      } catch {
+        AtlasLog.search.error("Place search failed: \(error.localizedDescription, privacy: .public)")
+        results = []
+      }
     }
   }
 }

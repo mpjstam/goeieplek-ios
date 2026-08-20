@@ -38,27 +38,17 @@ struct AtlasSearchField: View {
 
 /// A single search result row. `trailing` carries the row's action, which differs
 /// between the Search tab (Add) and the in-collection sheet (selection only).
-///
-/// Takes a plain title/subtitle rather than a `PlaceSearchResult` directly —
-/// the Search tab's rows show `PlaceSearchCompleter` suggestions, which have no
-/// coordinate (and so aren't a `PlaceSearchResult`) until the user picks one.
-/// `title` is an `AttributedString` so callers can bold the substring that
-/// matched the typed query.
 struct PlaceResultRow<Trailing: View>: View {
-  let title: AttributedString
+  let title: String
   var subtitle: String = ""
   var isSelected = false
   @ViewBuilder var trailing: Trailing
 
-  init(title: AttributedString, subtitle: String = "", isSelected: Bool = false, @ViewBuilder trailing: () -> Trailing) {
-    self.title = title
-    self.subtitle = subtitle
+  init(result: PlaceSearchResult, isSelected: Bool = false, @ViewBuilder trailing: () -> Trailing) {
+    self.title = result.name
+    self.subtitle = result.subtitle
     self.isSelected = isSelected
     self.trailing = trailing()
-  }
-
-  init(result: PlaceSearchResult, isSelected: Bool = false, @ViewBuilder trailing: () -> Trailing) {
-    self.init(title: AttributedString(result.name), subtitle: result.subtitle, isSelected: isSelected, trailing: trailing)
   }
 
   var body: some View {
