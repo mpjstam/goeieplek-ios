@@ -36,7 +36,7 @@
 
 /* Begin PBXFileReference section */
 		7F137EDE301A982B00EA4E5A /* Atlas.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Atlas.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		7F69F5BA303642D800386508 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; name = Info.plist; path = Atlas/Info.plist; sourceTree = "<group>"; };
+		7F69F5BA303642D800386508 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; name = Info.plist; path = atlas/Info.plist; sourceTree = "<group>"; };
 		7F74034B30226EEC00319DDC /* AtlasShare.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = AtlasShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -366,13 +366,13 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = atlas/Atlas.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = MSRHCDHW2R;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Atlas/Info.plist;
+				INFOPLIST_FILE = atlas/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Goeieplek;
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Atlas uses your location so you can quickly save the place you are currently at.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
@@ -414,13 +414,13 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = atlas/Atlas.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = MSRHCDHW2R;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Atlas/Info.plist;
+				INFOPLIST_FILE = atlas/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Goeieplek;
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Atlas uses your location so you can quickly save the place you are currently at.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
@@ -460,7 +460,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = AtlasShare/AtlasShare.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = MSRHCDHW2R;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = AtlasShare/Info.plist;
@@ -491,7 +491,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = AtlasShare/AtlasShare.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = MSRHCDHW2R;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = AtlasShare/Info.plist;
