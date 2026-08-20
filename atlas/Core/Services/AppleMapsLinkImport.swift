@@ -51,7 +51,7 @@ enum AppleMapsLinkImport {
     PlaceSearchResult(
       id: "apple-maps-\(coordinate.latitude)-\(coordinate.longitude)",
       name: name ?? "Gedeelde locatie",
-      subtitle: "From Apple Maps",
+      subtitle: "Vanuit Apple Maps",
       latitude: coordinate.latitude,
       longitude: coordinate.longitude
     )

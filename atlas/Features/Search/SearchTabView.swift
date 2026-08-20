@@ -26,7 +26,7 @@ struct SearchTabView: View {
   @State private var isPasting = false
   @State private var locationErrorMessage: String?
   @State private var shareNeedingCollection: PlaceSearchResult?
-  @State private var incomingShare: IncomingShare?
+  @State private var incomingShares: [IncomingShare] = []
   /// Set when the user has no collections yet and taps "New Collection" from
   /// a result — the sheet it drives creates the collection, then saves this
   /// already-resolved result straight into it.
@@ -38,10 +38,20 @@ struct SearchTabView: View {
   /// can't reliably bring Atlas to the foreground, so by the time this
   /// resolves the user may be looking at something else entirely. The banner
   /// stays put until they notice and tap it, instead of ambushing them.
-  private enum IncomingShare {
-    case loading
-    case ready(PlaceSearchResult)
-    case failed(String)
+  ///
+  /// Sharing several places in a row before ever opening Atlas queues all of
+  /// them (see `MapsShareInbox`), so this is `Identifiable` and each one
+  /// resolves and displays independently — a slow or failed one doesn't block
+  /// the rest of the stack.
+  private struct IncomingShare: Identifiable {
+    let id: UUID
+    var state: State
+
+    enum State {
+      case loading
+      case ready(PlaceSearchResult)
+      case failed(String)
+    }
   }
 
   @State private var locationService = CurrentLocationService()
@@ -83,7 +93,7 @@ struct SearchTabView: View {
       resolvePendingShare()
     }
     .onChange(of: searchText) { _, query in updateCompleterQuery(query) }
-    .onChange(of: pendingShare.urlString) { _, _ in resolvePendingShare() }
+    .onChange(of: pendingShare.urlStrings) { _, _ in resolvePendingShare() }
     .sheet(item: $pendingAdd) { pending in
       AddPlaceDetailsView(
         place: pending.place,
@@ -114,9 +124,9 @@ struct SearchTabView: View {
 
   @ViewBuilder
   private var incomingShareBanner: some View {
-    if let incomingShare {
+    ForEach(incomingShares) { share in
       VStack(spacing: 0) {
-        switch incomingShare {
+        switch share.state {
         case .loading:
           bannerRow(
             icon: "mappin.circle.fill",
@@ -127,7 +137,7 @@ struct SearchTabView: View {
           }
         case .ready(let result):
           Button {
-            self.incomingShare = nil
+            incomingShares.removeAll { $0.id == share.id }
             presentSingleResult(result)
           } label: {
             bannerRow(
@@ -147,7 +157,7 @@ struct SearchTabView: View {
             subtitle: message
           ) {
             Button {
-              self.incomingShare = nil
+              incomingShares.removeAll { $0.id == share.id }
             } label: {
               Image(systemName: "xmark.circle.fill")
                 .foregroundStyle(AtlasColor.textSecondary)
@@ -430,23 +440,36 @@ struct SearchTabView: View {
     }
   }
 
-  /// Picks up a link handed off by `RootView` from the `AtlasShare` extension
-  /// (see `MapsShareInbox`) and resolves it the same way a pasted link
-  /// is — but into the standing `incomingShare` banner rather than straight
-  /// into a sheet, since resolving can take a moment and the user may not
-  /// even be looking at this tab when it finishes.
+  /// Picks up every link handed off by `RootView` from the `AtlasShare`
+  /// extension (see `MapsShareInbox`) and resolves each the same way a pasted
+  /// link is — but into the standing `incomingShares` banner stack rather
+  /// than straight into a sheet, since resolving can take a moment and the
+  /// user may not even be looking at this tab when it finishes. Each queued
+  /// share resolves independently so one slow or failed link doesn't hold up
+  /// the others.
   private func resolvePendingShare() {
-    guard let urlString = pendingShare.urlString, let url = URL(string: urlString) else { return }
-    pendingShare.urlString = nil
-    incomingShare = .loading
-    Task {
-      do {
-        incomingShare = .ready(try await MapsLinkImport.resolve(url: url))
-      } catch {
-        AtlasLog.search.error("Shared maps link failed: \(error.localizedDescription, privacy: .public)")
-        incomingShare = .failed(error.localizedDescription)
+    guard !pendingShare.urlStrings.isEmpty else { return }
+    let urlStrings = pendingShare.urlStrings
+    pendingShare.urlStrings = []
+    for urlString in urlStrings {
+      guard let url = URL(string: urlString) else { continue }
+      let id = UUID()
+      incomingShares.append(IncomingShare(id: id, state: .loading))
+      Task {
+        do {
+          let result = try await MapsLinkImport.resolve(url: url)
+          updateIncomingShare(id: id, state: .ready(result))
+        } catch {
+          AtlasLog.search.error("Shared maps link failed: \(error.localizedDescription, privacy: .public)")
+          updateIncomingShare(id: id, state: .failed(error.localizedDescription))
+        }
       }
     }
+  }
+
+  private func updateIncomingShare(id: UUID, state: IncomingShare.State) {
+    guard let index = incomingShares.firstIndex(where: { $0.id == id }) else { return }
+    incomingShares[index].state = state
   }
 
   /// A place from current-location or paste is unambiguous — there's nothing to

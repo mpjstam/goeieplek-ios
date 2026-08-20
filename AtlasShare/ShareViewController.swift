@@ -21,7 +21,7 @@ import UniformTypeIdentifiers
 /// and this needs no caption at all.
 final class ShareViewController: UIViewController {
   private let appGroupID = "group.studiostam.atlas"
-  private let pendingURLKey = "pendingMapsShareURL"
+  private let pendingDirectoryName = "PendingMapsShares"
 
   private let spinner = UIActivityIndicatorView(style: .medium)
   private let statusLabel = UILabel()
@@ -113,20 +113,28 @@ final class ShareViewController: UIViewController {
     case writeFailed
   }
 
-  /// Writes directly to a file in the shared container rather than going through
-  /// `UserDefaults`/`CFPreferences` — `FileManager.write(to:atomically:)` is a plain,
-  /// synchronous disk write with no daemon-mediated caching layer in between, and
-  /// `containerURL(forSecurityApplicationGroupIdentifier:)` returning nil is the
-  /// direct, unambiguous signal that the App Group entitlement isn't actually
-  /// being granted to this process.
+  /// Writes each share as its own file in a shared-container subdirectory,
+  /// rather than one fixed file — sharing several locations in a row (before
+  /// ever opening Atlas) must queue them all, not have each one silently
+  /// overwrite the last. The timestamp-prefixed filename keeps `MapsShareInbox`
+  /// able to recover share order without any extra bookkeeping file.
+  ///
+  /// Writes directly to disk rather than going through `UserDefaults`/`CFPreferences`
+  /// — `FileManager.write(to:atomically:)` is a plain, synchronous disk write with no
+  /// daemon-mediated caching layer in between, and `containerURL(forSecurityApplicationGroupIdentifier:)`
+  /// returning nil is the direct, unambiguous signal that the App Group entitlement
+  /// isn't actually being granted to this process.
   private func persist(_ value: String) -> PersistResult {
     guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupID) else {
       print("[AtlasShare] containerURL(forSecurityApplicationGroupIdentifier: \"\(appGroupID)\") returned nil")
       return .containerUnavailable
     }
-    let fileURL = containerURL.appendingPathComponent(pendingURLKey).appendingPathExtension("txt")
+    let directoryURL = containerURL.appendingPathComponent(pendingDirectoryName, isDirectory: true)
+    let fileName = "\(Date().timeIntervalSince1970)-\(UUID().uuidString).txt"
+    let fileURL = directoryURL.appendingPathComponent(fileName)
     print("[AtlasShare] container found, writing to: \(fileURL.path)")
     do {
+      try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
       try value.write(to: fileURL, atomically: true, encoding: .utf8)
       print("[AtlasShare] write succeeded")
       return .success

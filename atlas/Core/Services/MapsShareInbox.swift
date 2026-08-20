@@ -1,26 +1,41 @@
 import Foundation
 
 /// Reads back whatever `AtlasShare`'s `ShareViewController` dropped in the App
-/// Group container — an Apple Maps or Google Maps link. The extension can't
+/// Group container — one or more Apple Maps or Google Maps links, one file per
+/// share so sharing several places in a row before ever opening Atlas queues
+/// all of them instead of each one overwriting the last. The extension can't
 /// reliably switch back to Atlas itself (see its doc comment), so this is
 /// polled by `RootView` on every activation instead of waiting on a deep link
 /// that might not arrive.
 enum MapsShareInbox {
   private static let appGroupID = "group.studiostam.atlas"
-  private static let pendingURLKey = "pendingMapsShareURL"
+  private static let pendingDirectoryName = "PendingMapsShares"
 
-  /// Returns and clears the pending share, if any. `nil` covers both "nothing
-  /// was shared" and "the App Group container isn't reachable" — either way
-  /// there's nothing for the caller to act on.
-  static func takePending() -> String? {
+  /// Returns and clears every pending share, oldest first — the filename's
+  /// timestamp prefix (see `ShareViewController.persist(_:)`) is what makes
+  /// that ordering recoverable without a separate index file. An empty array
+  /// covers "nothing was shared," "the directory doesn't exist yet," and "the
+  /// App Group container isn't reachable" alike — either way there's nothing
+  /// for the caller to act on.
+  static func takeAllPending() -> [String] {
     guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupID) else {
-      return nil
+      return []
     }
-    let fileURL = containerURL.appendingPathComponent(pendingURLKey).appendingPathExtension("txt")
-    guard let value = try? String(contentsOf: fileURL, encoding: .utf8), !value.isEmpty else {
-      return nil
+    let directoryURL = containerURL.appendingPathComponent(pendingDirectoryName, isDirectory: true)
+    guard let fileURLs = try? FileManager.default.contentsOfDirectory(
+      at: directoryURL,
+      includingPropertiesForKeys: nil
+    ) else {
+      return []
     }
-    try? FileManager.default.removeItem(at: fileURL)
-    return value
+    return fileURLs
+      .sorted { $0.lastPathComponent < $1.lastPathComponent }
+      .compactMap { fileURL in
+        defer { try? FileManager.default.removeItem(at: fileURL) }
+        guard let value = try? String(contentsOf: fileURL, encoding: .utf8), !value.isEmpty else {
+          return nil
+        }
+        return value
+      }
   }
 }

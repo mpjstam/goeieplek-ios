@@ -57,8 +57,9 @@ struct RootView: View {
   }
 
   private func checkForPendingShare() {
-    guard let urlString = MapsShareInbox.takePending() else { return }
-    pendingShare.urlString = urlString
+    let urlStrings = MapsShareInbox.takeAllPending()
+    guard !urlStrings.isEmpty else { return }
+    pendingShare.urlStrings.append(contentsOf: urlStrings)
     selectedTab = .search
   }
 }

@@ -46,7 +46,7 @@ struct PlaceSearchService {
     let coordinate = item.location.coordinate
     return PlaceSearchResult(
       id: item.identifier?.rawValue ?? "\(coordinate.latitude),\(coordinate.longitude)",
-      name: item.name ?? "Unknown place",
+      name: item.name ?? "Onbekende plek",
       subtitle: item.address?.shortAddress ?? "",
       latitude: coordinate.latitude,
       longitude: coordinate.longitude
