@@ -39,7 +39,10 @@ struct PlaceSearchService {
     return response.mapItems.map(Self.result(from:))
   }
 
-  private static func result(from item: MKMapItem) -> PlaceSearchResult {
+  /// Internal access rather than `private` — `PlaceSearchCompleter` reuses this
+  /// to convert the one `MKLocalSearch` it performs (resolving a completion the
+  /// user picked) into the same result type, rather than duplicating the mapping.
+  static func result(from item: MKMapItem) -> PlaceSearchResult {
     let coordinate = item.location.coordinate
     return PlaceSearchResult(
       id: item.identifier?.rawValue ?? "\(coordinate.latitude),\(coordinate.longitude)",
